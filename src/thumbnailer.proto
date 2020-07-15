@@ -1,0 +1,32 @@
+syntax = "proto2";
+
+package libwebp;
+
+message Thumbnailer {
+  // Desired (soft) maximum size limit in bytes.
+  // This is what thumbnailer aims for at first. If it can't achieve this size
+  // with at least 'min_lossy_quality', it will try to achieve 'hard_max_size'
+  // instead.
+  optional uint32 soft_max_size = 1 [default = 153600];
+
+  // Used for size estimation. May differ from actual number of frames in the
+  // animation.
+  optional uint32 estimated_num_frames = 2 [default = 50];
+
+  // Number of times animation will loop.
+  optional int32 loop_count = 3 [default = 1];
+
+  // Minimum lossy quality to be used for encoding each frame.
+  optional int32 min_lossy_quality = 4 [default = 0];
+
+  // Hard limit for maximum file size. Refer to the description of
+  // 'soft_max_size' for details.
+  // If it is less than 'soft_max_size', it will be set to 'soft_max_size'.
+  optional uint32 hard_max_size = 5 [default = 153600];
+
+  // If true, thumbnailer may use mixed lossy/lossless compression.
+  optional bool allow_mixed = 6 [default = false];
+
+  // If true, thumbnailer will use much more CPU to compress lossless frames.
+  optional bool use_cruncher = 7 [default = false];
+}
