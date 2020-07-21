@@ -3,4 +3,6 @@ that best fits in an allocated byte budget.
 
 You need to install the following:
 
-   sudo apt install libprotobuf-dev libprotoc-dev protobuf-compiler
+```sh
+sudo apt install libprotobuf-dev libprotoc-dev protobuf-compiler
+```
