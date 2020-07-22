@@ -12,14 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "class.h"
+
 namespace libwebp {
+
+Thumbnailer::Thumbnailer() {}
+Thumbnailer::~Thumbnailer() {}
 
 // Let's implement stuff !
 // TODO: to create an animation:
 //       - create a WebPAnimEncoderOptions  config
 //       - set the quality to something in your search space
+bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {}
+
 //       - call WebPAnimEncoderNew, then fill the animation with WebPPicture
 //         using WebPAnimEncoderAdd
 //       - finalize with WebPAnimEncoderAssemble
+bool Thumbnailer::GenerateAnimation(WebPPicture* const output) {}
 
 }  // namespace libwebp
