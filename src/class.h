@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef THUMBNAILER_SRC_CLASS_H_
+#define THUMBNAILER_SRC_CLASS_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,3 +57,5 @@ class Thumbnailer {
 };
 
 }  // namespace libwebp
+
+#endif // THUMBNAILER_SRC_CLASS_H_
