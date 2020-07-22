@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include "../imageio/image_dec.h"
@@ -38,7 +39,7 @@ class Thumbnailer {
 
   // Generates the animation.
   // Returns true on success and false on failure.
-  bool GenerateAnimation(WebPPicture* const output);
+  bool GenerateAnimation(WebPData* const webp_data);
 
  private:
   struct FrameData {
@@ -47,10 +48,9 @@ class Thumbnailer {
   };
   std::vector<FrameData> frames;
   WebPAnimEncoder* enc = NULL;
-  WebPData webp_data;
   WebPAnimEncoderOptions anim_config;
   WebPConfig config;
-  int loop_count;
+  int loop_count = 0;
 };
 
 }  // namespace libwebp

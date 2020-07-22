@@ -17,15 +17,11 @@
 namespace libwebp {
 
 Thumbnailer::Thumbnailer() {
-  WebPDataInit(&webp_data);
   WebPAnimEncoderOptionsInit(&anim_config);
   WebPConfigInit(&config);
 }
 
-Thumbnailer::~Thumbnailer() {
-  WebPAnimEncoderDelete(enc);
-  WebPDataClear(&webp_data);
-}
+Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc); }
 
 // Let's implement stuff !
 // TODO: to create an animation:
@@ -44,12 +40,8 @@ bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {
     }
   }
 
-  WebPPicture picture = pic;
-  ok = ok && WebPAnimEncoderAdd(enc, &picture, timestamp_ms, &config);
-  if (ok) {
-    FrameData new_frame = {pic, timestamp_ms};
-    frames.push_back(new_frame);
-  }
+  FrameData new_frame = {pic, timestamp_ms};
+  frames.push_back(new_frame);
 
   return ok;
 }
@@ -57,20 +49,33 @@ bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {
 //       - call WebPAnimEncoderNew, then fill the animation with WebPPicture
 //         using WebPAnimEncoderAdd
 //       - finalize with WebPAnimEncoderAssemble
-bool Thumbnailer::GenerateAnimation(WebPPicture* const output) {
+bool Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
+  bool ok = true;
+  // Rearrange frames
+  std::sort(frames.begin(), frames.end(),
+            [&](FrameData A, FrameData B) -> bool {
+              return A.timestamp_ms < B.timestamp_ms;
+            });
+
+  // Fill the animation
+  for (auto frame : frames) {
+    ok = ok && WebPAnimEncoderAdd(enc, &frame.pic, frame.timestamp_ms, &config);
+  }
+
   // Add last frame
   WebPAnimEncoderAdd(enc, NULL, frames.back().timestamp_ms, NULL);
-  WebPAnimEncoderAssemble(enc, &webp_data);
+  WebPAnimEncoderAssemble(enc, webp_data);
 
   // Set loop count
   WebPMuxAnimParams new_params;
-  WebPMux* const mux = WebPMuxCreate(&webp_data, 1);
+  WebPMux* const mux = WebPMuxCreate(webp_data, 1);
   new_params.loop_count = loop_count;
   WebPMuxSetAnimationParams(mux, &new_params);
-
-  WebPDataClear(&webp_data);
-  WebPMuxAssemble(mux, &webp_data);
+  WebPDataClear(webp_data);
+  WebPMuxAssemble(mux, webp_data);
   WebPMuxDelete(mux);
+
+  return ok;
 }
 
 }  // namespace libwebp
