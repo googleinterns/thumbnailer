@@ -16,7 +16,12 @@
 
 namespace libwebp {
 
-Thumbnailer::Thumbnailer() {}
+Thumbnailer::Thumbnailer() {
+  WebPDataInit(&webp_data);
+  WebPAnimEncoderOptionsInit(&anim_config);
+  WebPConfigInit(&config);
+}
+
 Thumbnailer::~Thumbnailer() {
   WebPAnimEncoderDelete(enc);
   WebPDataClear(&webp_data);
@@ -26,7 +31,28 @@ Thumbnailer::~Thumbnailer() {
 // TODO: to create an animation:
 //       - create a WebPAnimEncoderOptions  config
 //       - set the quality to something in your search space
-bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {}
+bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {
+  bool ok = true;
+
+  if (frames.empty()) {
+    enc = WebPAnimEncoderNew(pic.width, pic.height, &anim_config);
+    ok = (enc != nullptr);
+  } else {
+    if (pic.width != (frames[0].pic).width ||
+        pic.height != (frames[0].pic).height) {
+      ok = false;
+    }
+  }
+
+  WebPPicture picture = pic;
+  ok = ok && WebPAnimEncoderAdd(enc, &picture, timestamp_ms, &config);
+  if (ok) {
+    FrameData new_frame = {pic, timestamp_ms};
+    frames.push_back(new_frame);
+  }
+
+  return ok;
+}
 
 //       - call WebPAnimEncoderNew, then fill the animation with WebPPicture
 //         using WebPAnimEncoderAdd
