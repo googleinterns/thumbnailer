@@ -12,14 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <algorithm>
+#include <vector>
+
+#include "../imageio/image_dec.h"
+#include "../imageio/imageio_util.h"
 #include "webp/encode.h"
+#include "webp/mux.h"
 
 namespace libwebp {
 
-// Class that does something.
+// Takes time stamped images as an input and produces an animation.
 class Thumbnailer {
-  // TODO: add an API to add frames with a timestamp.
-  // TODO: add an API to generate the animation.
+ public:
+  Thumbnailer();
+  ~Thumbnailer();
+
+  // Adds a frame with a timestamp (in millisecond).
+  // Returns true on success and false on failure.
+  bool AddFrame(const WebPPicture& pic, int timestamp_ms);
+
+  // Generates the animation.
+  // Returns true on success and false on failure.
+  bool GenerateAnimation(WebPPicture* const output);
+
+ private:
+  struct FrameData {
+    WebPPicture pic;
+    int timestamp_ms;
+  };
+  std::vector<FrameData> frames;
+  WebPAnimEncoder* enc = NULL;
+  WebPData webp_data;
+  WebPAnimEncoderOptions anim_config;
+  WebPConfig config;
+  int loop_count;
 };
 
 }  // namespace libwebp
