@@ -23,13 +23,10 @@ Thumbnailer::Thumbnailer() {
 
 Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc); }
 
-// Let's implement stuff !
-// TODO: to create an animation:
-//       - create a WebPAnimEncoderOptions  config
-//       - set the quality to something in your search space
 bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {
   bool ok = true;
 
+  // Verifies dimension of frames.
   if (frames.empty()) {
     enc = WebPAnimEncoderNew(pic.width, pic.height, &anim_config);
     ok = (enc != nullptr);
@@ -46,27 +43,25 @@ bool Thumbnailer::AddFrame(const WebPPicture& pic, int timestamp_ms) {
   return ok;
 }
 
-//       - call WebPAnimEncoderNew, then fill the animation with WebPPicture
-//         using WebPAnimEncoderAdd
-//       - finalize with WebPAnimEncoderAssemble
 bool Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   bool ok = true;
-  // Rearrange frames
+
+  // Rearranges frames.
   std::sort(frames.begin(), frames.end(),
             [&](FrameData A, FrameData B) -> bool {
               return A.timestamp_ms < B.timestamp_ms;
             });
 
-  // Fill the animation
+  // Fills the animation.
   for (auto frame : frames) {
     ok = ok && WebPAnimEncoderAdd(enc, &frame.pic, frame.timestamp_ms, &config);
   }
 
-  // Add last frame
+  // Adds last frame.
   WebPAnimEncoderAdd(enc, NULL, frames.back().timestamp_ms, NULL);
   WebPAnimEncoderAssemble(enc, webp_data);
 
-  // Set loop count
+  // Sets loop count.
   WebPMuxAnimParams new_params;
   WebPMux* const mux = WebPMuxCreate(webp_data, 1);
   new_params.loop_count = loop_count;
