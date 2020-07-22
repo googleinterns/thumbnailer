@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef THUMBNAILER_SRC_CLASS_H_
+#define THUMBNAILER_SRC_CLASS_H_
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "../imageio/image_dec.h"
@@ -32,13 +37,18 @@ class Thumbnailer {
   Thumbnailer();
   ~Thumbnailer();
 
+  // Status codes for adding frame and generating animation.
+  enum Status {
+    kOk = 0,           // On success.
+    kMemoryError,      // In case of memory error.
+    kImageFormatError  // If frame dimensions are mismatched.
+  };
+
   // Adds a frame with a timestamp (in millisecond).
-  // Returns true on success and false on failure.
-  bool AddFrame(const WebPPicture& pic, int timestamp_ms);
+  Status AddFrame(const WebPPicture& pic, int timestamp_ms);
 
   // Generates the animation.
-  // Returns true on success and false on failure.
-  bool GenerateAnimation(WebPPicture* const output);
+  Status GenerateAnimation(WebPData* const webp_data);
 
  private:
   struct FrameData {
@@ -47,10 +57,11 @@ class Thumbnailer {
   };
   std::vector<FrameData> frames;
   WebPAnimEncoder* enc = NULL;
-  WebPData webp_data;
   WebPAnimEncoderOptions anim_config;
   WebPConfig config;
-  int loop_count;
+  int loop_count = 0;
 };
 
 }  // namespace libwebp
+
+#endif  // THUMBNAILER_SRC_CLASS_H_
