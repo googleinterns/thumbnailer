@@ -45,8 +45,6 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
-  bool ok = true;
-
   // Rearrange frames.
   std::sort(frames.begin(), frames.end(),
             [](const FrameData& A, const FrameData& B) -> bool {
@@ -55,12 +53,21 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
 
   // Fill the animation.
   for (auto& frame : frames) {
-    ok = ok && WebPAnimEncoderAdd(enc, &frame.pic, frame.timestamp_ms, &config);
+    if (!WebPAnimEncoderAdd(enc, &frame.pic, frame.timestamp_ms, &config)) {
+      return kMemoryError;
+    }
   }
 
   // Add last frame.
-  ok = ok && WebPAnimEncoderAdd(enc, NULL, frames.back().timestamp_ms, NULL);
-  ok = ok && WebPAnimEncoderAssemble(enc, webp_data);
+  if (!WebPAnimEncoderAdd(enc, NULL, frames.back().timestamp_ms, NULL)) {
+    return kMemoryError;
+  }
+
+  if (!WebPAnimEncoderAssemble(enc, webp_data)) {
+    return kMemoryError;
+  }
+
+  if (loop_count == 0) return kOk;
 
   // Set loop count.
   WebPMuxError err;
