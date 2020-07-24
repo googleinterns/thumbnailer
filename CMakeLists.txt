@@ -31,13 +31,13 @@ endforeach()
 message(STATUS "Adding ${TB_DEP_IMG_LIBRARIES} libraries.")
 
 target_link_libraries(imagedec
-                      imageioutil
+                      imageio_util
                       webpdemux
                       webp
                       ${TB_DEP_IMG_LIBRARIES})
 
 add_library(imageenc STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/image_enc.c)
-target_link_libraries(imageenc imageioutil webp)
+target_link_libraries(imageenc imageio_util webp)
 
 # Thumbnailer library.
 find_package(Protobuf)
@@ -50,4 +50,4 @@ target_include_directories(thumbnailer_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 
 add_executable(thumbnailer ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
-target_link_libraries(thumbnailer thumbnailer_lib)
+target_link_libraries(thumbnailer thumbnailer_lib imagedec webpmux)

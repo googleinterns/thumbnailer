@@ -39,11 +39,9 @@ int main(int argc, char* argv[]) {
   // TODO: write the animation to disk
 
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
-  WebPPicture pic;
-  WebPData webp_data;
 
+  WebPData webp_data;
   WebPDataInit(&webp_data);
-  WebPPictureInit(&pic);
 
   std::ifstream input_list(argv[1]);
   const char* output = argv[2];
@@ -51,6 +49,8 @@ int main(int argc, char* argv[]) {
   int timestamp_ms;
 
   while (input_list >> filename_str >> timestamp_ms) {
+    WebPPicture pic;
+    WebPPictureInit(&pic);
     char filename[filename_str.length()];
     strcpy(filename, filename_str.c_str());
     ReadImage(filename, &pic);
