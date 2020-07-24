@@ -34,10 +34,6 @@ static bool ReadImage(const char filename[], WebPPicture* const pic) {
 }
 
 int main(int argc, char* argv[]) {
-  // TODO: read images given as arguments
-  // TODO: create an animation
-  // TODO: write the animation to disk
-
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   WebPData webp_data;
@@ -57,10 +53,9 @@ int main(int argc, char* argv[]) {
     thumbnailer.AddFrame(pic, timestamp_ms);
   }
 
-  // thumbnailer.GenerateAnimation(&webp_data); // currently SEGFAULT
-  // ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
+  thumbnailer.GenerateAnimation(&webp_data);
+  ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
 
   WebPDataClear(&webp_data);
-  std::cout << "Compressing: hll wrld" << std::endl;
   return 0;
 }
