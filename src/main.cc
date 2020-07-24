@@ -19,17 +19,18 @@
 #include "class.h"
 
 // Return true on success or false on failure.
-bool ReadImage(const char filename[], WebPPicture* const pic) {
+static bool ReadImage(const char filename[], WebPPicture* const pic) {
   const uint8_t* data = NULL;
   size_t data_size = 0;
   WebPImageReader reader;
-  if (!ImgIoUtilReadFile(filename, &data, &data_size)) goto out;
+  bool ok;
+
+  if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
   reader = WebPGuessImageReader(data, data_size);
-  if (!reader(data, data_size, pic, 1, NULL)) goto out;
-  return true;
-out:
+  ok = reader(data, data_size, pic, 1, NULL);
+
   free((void*)data);
-  return false;
+  return ok;
 }
 
 int main(int argc, char* argv[]) {
@@ -52,13 +53,14 @@ int main(int argc, char* argv[]) {
   while (input_list >> filename_str >> timestamp_ms) {
     char filename[filename_str.length()];
     strcpy(filename, filename_str.c_str());
-    std::cout << ReadImage(filename, &pic);
+    ReadImage(filename, &pic);
     thumbnailer.AddFrame(pic, timestamp_ms);
   }
 
-  // thumbnailer.GenerateAnimation(&webp_data);
+  // thumbnailer.GenerateAnimation(&webp_data); // currently SEGFAULT
   // ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
 
+  WebPDataClear(&webp_data);
   std::cout << "Compressing: hll wrld" << std::endl;
   return 0;
 }
