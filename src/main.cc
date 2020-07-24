@@ -24,11 +24,10 @@ static bool ReadImage(const char filename[], WebPPicture* const pic) {
   size_t data_size = 0;
   if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
 
-  WebPImageReader reader;
-  reader = WebPGuessImageReader(data, data_size);
-
+  WebPImageReader reader = WebPGuessImageReader(data, data_size);
   bool ok = reader(data, data_size, pic, 1, NULL);
   free((void*)data);
+
   return ok;
 }
 
