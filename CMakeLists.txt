@@ -11,9 +11,6 @@ add_library(imageio_util STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/imageio_util
 target_link_libraries(imageio_util webp)
 target_include_directories(imageio_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-find_package(JPEG)
-find_package(PNG)
-find_package(TIFF)
 add_library(imagedec STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/image_dec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/jpegdec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/metadata.c
@@ -22,13 +19,22 @@ add_library(imagedec STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/image_dec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/tiffdec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/webpdec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/wicdec.c)
+# Find the standard image libraries.
+set(TB_DEP_IMG_LIBRARIES)
+foreach(I_LIB PNG JPEG TIFF)
+  find_package(${I_LIB})
+  if(${I_LIB}_FOUND)
+    target_compile_definitions(imagedec PUBLIC WEBP_HAVE_${I_LIB})
+    list(APPEND TB_DEP_IMG_LIBRARIES ${I_LIB}::${I_LIB})
+  endif()
+endforeach()
+message(STATUS "Adding ${TB_DEP_IMG_LIBRARIES} libraries.")
+
 target_link_libraries(imagedec
                       imageioutil
                       webpdemux
                       webp
-                      JPEG::JPEG
-                      PNG::PNG
-                      TIFF::TIFF)
+                      ${TB_DEP_IMG_LIBRARIES})
 
 add_library(imageenc STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/image_enc.c)
 target_link_libraries(imageenc imageioutil webp)
