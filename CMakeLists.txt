@@ -41,6 +41,9 @@ target_link_libraries(imageenc imageio_util webp)
 
 # Thumbnailer library.
 find_package(Protobuf)
+if(NOT Protobuf_FOUND)
+  message(FATAL_ERROR "Protobuf devel library missing.")
+endif()
 include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.proto)
