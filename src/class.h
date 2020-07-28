@@ -39,9 +39,11 @@ class Thumbnailer {
 
   // Status codes for adding frame and generating animation.
   enum Status {
-    kOk = 0,           // On success.
-    kMemoryError,      // In case of memory error.
-    kImageFormatError  // If frame dimensions are mismatched.
+    kOk = 0,            // On success.
+    kMemoryError,       // In case of memory error.
+    kImageFormatError,  // If frame dimensions are mismatched.
+    kByteBudgetError  // If there is no quality that makes the animation fit the
+                      // byte budget.
   };
 
   // Adds a frame with a timestamp (in millisecond).
@@ -49,6 +51,10 @@ class Thumbnailer {
 
   // Generates the animation.
   Status GenerateAnimation(WebPData* const webp_data);
+
+  // Finds the best quality that makes the animation fit right below the given
+  // byte budget and generates the animation.
+  Status GenerateAnimationFittingBudget(WebPData* const webp_data);
 
  private:
   struct FrameData {
@@ -60,6 +66,7 @@ class Thumbnailer {
   WebPAnimEncoderOptions anim_config;
   WebPConfig config;
   int loop_count = 0;
+  int byte_budget = 153600;
 };
 
 }  // namespace libwebp

@@ -26,16 +26,9 @@ Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc); }
 Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
                                           int timestamp_ms) {
   // Verify dimension of frames.
-  if (frames.empty()) {
-    enc = WebPAnimEncoderNew(pic.width, pic.height, &anim_config);
-    if (enc == nullptr) {
-      return kMemoryError;
-    }
-  } else {
-    if (pic.width != (frames[0].pic).width ||
-        pic.height != (frames[0].pic).height) {
-      return kImageFormatError;
-    }
+  if (!frames.empty() && (pic.width != (frames[0].pic).width ||
+                          pic.height != (frames[0].pic).height)) {
+    return kImageFormatError;
   }
 
   FrameData new_frame = {pic, timestamp_ms};
@@ -45,11 +38,12 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
-  // Rearrange frames.
-  std::sort(frames.begin(), frames.end(),
-            [](const FrameData& A, const FrameData& B) -> bool {
-              return A.timestamp_ms < B.timestamp_ms;
-            });
+  // Initialize WebPAnimEncoder object.
+  enc = WebPAnimEncoderNew((frames[0].pic).width, (frames[0].pic).height,
+                           &anim_config);
+  if (enc == nullptr) {
+    return kMemoryError;
+  }
 
   // Fill the animation.
   for (auto& frame : frames) {
@@ -94,6 +88,46 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
 
   WebPDataClear(webp_data);
   if (WebPMuxAssemble(mux.get(), webp_data) != WEBP_MUX_OK) return kMemoryError;
+
+  return kOk;
+}
+
+Thumbnailer::Status Thumbnailer::GenerateAnimationFittingBudget(
+    WebPData* const webp_data) {
+  // Rearrange frames.
+  std::sort(frames.begin(), frames.end(),
+            [](const FrameData& A, const FrameData& B) -> bool {
+              return A.timestamp_ms < B.timestamp_ms;
+            });
+
+  // Use binary search to find the quality that makes the animation fit right
+  // below the given byte budget.
+  int min_quality = 0;
+  int max_quality = 100;
+  int final_quality = -1;
+  WebPData new_webp_data;
+  WebPDataInit(&new_webp_data);
+
+  while (min_quality <= max_quality) {
+    int middle = (min_quality + max_quality) / 2;
+
+    config.quality = middle;
+    GenerateAnimation(&new_webp_data);
+
+    if (new_webp_data.size <= byte_budget) {
+      final_quality = middle;
+      *webp_data = new_webp_data;
+      min_quality = middle + 1;
+    } else {
+      max_quality = middle - 1;
+    }
+  }
+
+  if (final_quality == -1) {
+    return kByteBudgetError;
+  }
+
+  config.quality = final_quality;
 
   return kOk;
 }
