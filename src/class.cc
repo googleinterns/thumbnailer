@@ -19,6 +19,9 @@ namespace libwebp {
 Thumbnailer::Thumbnailer() {
   WebPAnimEncoderOptionsInit(&anim_config_);
   WebPConfigInit(&config_);
+  loop_count_ = 0;
+  byte_budget_ = 153600;
+  minimum_lossy_quality_ = 0;
 }
 
 Thumbnailer::Thumbnailer(
