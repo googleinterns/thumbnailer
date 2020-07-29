@@ -17,6 +17,7 @@
 #include <string>
 
 #include "class.h"
+#include "thumbnailer.pb.h"
 
 // Returns true on success or false on failure.
 static bool ReadImage(const char filename[], WebPPicture* const pic) {
@@ -32,7 +33,10 @@ static bool ReadImage(const char filename[], WebPPicture* const pic) {
 }
 
 int main(int argc, char* argv[]) {
-  libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+  thumbnailer::ThumbnailerOption thumbnailer_option;
+
+  libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer(thumbnailer_option);
 
   // Process list of images and timestamps.
   std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
@@ -56,9 +60,11 @@ int main(int argc, char* argv[]) {
   const char* output = argv[2];
   WebPData webp_data;
   WebPDataInit(&webp_data);
-  thumbnailer.GenerateAnimationFittingBudget(&webp_data);
+  thumbnailer.GenerateAnimation(&webp_data);
   ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
   WebPDataClear(&webp_data);
+
+  google::protobuf::ShutdownProtobufLibrary();
 
   return 0;
 }
