@@ -26,6 +26,7 @@
 
 #include "../imageio/image_dec.h"
 #include "../imageio/imageio_util.h"
+#include "thumbnailer.pb.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
 
@@ -35,6 +36,7 @@ namespace libwebp {
 class Thumbnailer {
  public:
   Thumbnailer();
+  Thumbnailer(const thumbnailer::ThumbnailerOption& thumbnailer_option);
   ~Thumbnailer();
 
   // Status codes for adding frame and generating animation.
@@ -50,23 +52,24 @@ class Thumbnailer {
   Status AddFrame(const WebPPicture& pic, int timestamp_ms);
 
   // Generates the animation.
-  Status GenerateAnimation(WebPData* const webp_data);
+  Status GenerateAnimationNoBudget(WebPData* const webp_data);
 
   // Finds the best quality that makes the animation fit right below the given
   // byte budget and generates the animation.
-  Status GenerateAnimationFittingBudget(WebPData* const webp_data);
+  Status GenerateAnimation(WebPData* const webp_data);
 
  private:
   struct FrameData {
     WebPPicture pic;
     int timestamp_ms;
   };
-  std::vector<FrameData> frames;
-  WebPAnimEncoder* enc = NULL;
-  WebPAnimEncoderOptions anim_config;
-  WebPConfig config;
-  int loop_count = 0;
-  int byte_budget = 153600;
+  std::vector<FrameData> frames_;
+  WebPAnimEncoder* enc_ = NULL;
+  WebPAnimEncoderOptions anim_config_;
+  WebPConfig config_;
+  int loop_count_;
+  int byte_budget_;
+  int minimum_lossy_quality_;
 };
 
 }  // namespace libwebp

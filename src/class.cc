@@ -17,51 +17,65 @@
 namespace libwebp {
 
 Thumbnailer::Thumbnailer() {
-  WebPAnimEncoderOptionsInit(&anim_config);
-  WebPConfigInit(&config);
+  WebPAnimEncoderOptionsInit(&anim_config_);
+  WebPConfigInit(&config_);
 }
 
-Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc); }
+Thumbnailer::Thumbnailer(
+    const thumbnailer::ThumbnailerOption& thumbnailer_option) {
+  WebPAnimEncoderOptionsInit(&anim_config_);
+  WebPConfigInit(&config_);
+  loop_count_ = thumbnailer_option.loop_count();
+  byte_budget_ = thumbnailer_option.soft_max_size();
+  minimum_lossy_quality_ = thumbnailer_option.min_lossy_quality();
+  if (thumbnailer_option.allow_mixed()) {
+    anim_config_.allow_mixed = 1;
+    config_.lossless = 0;
+  }
+}
+
+Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc_); }
 
 Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
                                           int timestamp_ms) {
   // Verify dimension of frames.
-  if (!frames.empty() && (pic.width != (frames[0].pic).width ||
-                          pic.height != (frames[0].pic).height)) {
+  if (!frames_.empty() && (pic.width != (frames_[0].pic).width ||
+                           pic.height != (frames_[0].pic).height)) {
     return kImageFormatError;
   }
 
   FrameData new_frame = {pic, timestamp_ms};
-  frames.push_back(new_frame);
+  frames_.push_back(new_frame);
 
   return kOk;
 }
 
-Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
+Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
+    WebPData* const webp_data) {
   // Initialize WebPAnimEncoder object.
-  enc = WebPAnimEncoderNew((frames[0].pic).width, (frames[0].pic).height,
-                           &anim_config);
-  if (enc == nullptr) {
+  enc_ = WebPAnimEncoderNew((frames_[0].pic).width, (frames_[0].pic).height,
+                            &anim_config_);
+  if (enc_ == nullptr) {
     return kMemoryError;
   }
 
   // Fill the animation.
-  for (auto& frame : frames) {
-    if (!WebPAnimEncoderAdd(enc, &frame.pic, frame.timestamp_ms, &config)) {
+  for (auto& frame : frames_) {
+    if (!WebPAnimEncoderAdd(enc_, &frame.pic, frame.timestamp_ms, &config_)) {
       return kMemoryError;
     }
   }
 
   // Add last frame.
-  if (!WebPAnimEncoderAdd(enc, NULL, frames.back().timestamp_ms, NULL)) {
+  if (!WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL)) {
     return kMemoryError;
   }
 
-  if (!WebPAnimEncoderAssemble(enc, webp_data)) {
+  if (!WebPAnimEncoderAssemble(enc_, webp_data)) {
     return kMemoryError;
   }
 
-  if (loop_count == 0) return kOk;
+  if (loop_count_ == 0) return kOk;
 
   // Set loop count.
   WebPMuxError err;
@@ -81,7 +95,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     return kMemoryError;
   }
 
-  new_params.loop_count = loop_count;
+  new_params.loop_count = loop_count_;
   if (WebPMuxSetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
     return kMemoryError;
   }
@@ -92,17 +106,16 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   return kOk;
 }
 
-Thumbnailer::Status Thumbnailer::GenerateAnimationFittingBudget(
-    WebPData* const webp_data) {
+Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   // Rearrange frames.
-  std::sort(frames.begin(), frames.end(),
+  std::sort(frames_.begin(), frames_.end(),
             [](const FrameData& A, const FrameData& B) -> bool {
               return A.timestamp_ms < B.timestamp_ms;
             });
 
   // Use binary search to find the quality that makes the animation fit right
   // below the given byte budget.
-  int min_quality = 0;
+  int min_quality = minimum_lossy_quality_;
   int max_quality = 100;
   int final_quality = -1;
   WebPData new_webp_data;
@@ -111,10 +124,10 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationFittingBudget(
   while (min_quality <= max_quality) {
     int middle = (min_quality + max_quality) / 2;
 
-    config.quality = middle;
-    GenerateAnimation(&new_webp_data);
+    config_.quality = middle;
+    GenerateAnimationNoBudget(&new_webp_data);
 
-    if (new_webp_data.size <= byte_budget) {
+    if (new_webp_data.size <= byte_budget_) {
       final_quality = middle;
       *webp_data = new_webp_data;
       min_quality = middle + 1;
@@ -127,7 +140,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationFittingBudget(
     return kByteBudgetError;
   }
 
-  config.quality = final_quality;
+  config_.quality = final_quality;
 
   return kOk;
 }

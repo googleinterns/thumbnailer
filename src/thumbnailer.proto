@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-package libwebp;
+package thumbnailer;
 
-message Thumbnailer {
+message ThumbnailerOption {
   // Desired (soft) maximum size limit in bytes.
   // This is what thumbnailer aims for at first. If it can't achieve this size
   // with at least 'min_lossy_quality', it will try to achieve 'hard_max_size'
