@@ -5,51 +5,32 @@
 
 const int kDefaultWidth = 80;
 const int kDefaultHeight = 60;
+const int kDefaultBudget = 153600;  // 150 kB
 
 class WebPSamplesGenerator {
  public:
   // Initializing.
   WebPSamplesGenerator()
-      : pic_count(10),
-        width(kDefaultWidth),
-        height(kDefaultHeight),
-        transparency(0xff),
-        randomized(true) {}
+      : pic_count_(10),
+        width_(kDefaultWidth),
+        height_(kDefaultHeight),
+        transparency_(0xff),
+        randomized_(true) {}
 
   WebPSamplesGenerator(int pic_count, uint8_t transparency, bool randomized)
-      : pic_count(pic_count),
-        width(kDefaultWidth),
-        height(kDefaultHeight),
-        transparency(transparency),
-        randomized(randomized) {}
+      : pic_count_(pic_count),
+        width_(kDefaultWidth),
+        height_(kDefaultHeight),
+        transparency_(transparency),
+        randomized_(randomized) {}
 
   WebPSamplesGenerator(int pic_count, int width, int height,
                        uint8_t transparency, bool randomized)
-      : pic_count(pic_count),
-        width(width),
-        height(height),
-        transparency(transparency),
-        randomized(randomized) {}
-
-  // Returns RGBA values for WebPPicture.
-  std::vector<uint8_t> GenerateRGBA(int seed) {
-    std::mt19937 rng(seed);
-    std::vector<uint8_t> rgba;
-
-    int color_R = rng();
-    int color_G = rng();
-    int color_B = rng();
-
-    for (int i = 0; i <= height; ++i) {
-      for (int j = 0; j <= width * 4; ++j) {
-        rgba.push_back(randomized ? rng() & 0xff : color_R);
-        rgba.push_back(randomized ? rng() & 0xff : color_G);
-        rgba.push_back(randomized ? rng() & 0xff : color_B);
-        rgba.push_back(transparency);
-      }
-    }
-    return rgba;
-  }
+      : pic_count_(pic_count),
+        width_(width),
+        height_(height),
+        transparency_(transparency),
+        randomized_(randomized) {}
 
   // Returns vector of WebPPicture(s).
   // randomized == true: picture is random noise
@@ -57,27 +38,47 @@ class WebPSamplesGenerator {
   std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>>
   GeneratePics() {
     std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
-    for (int i = 0; i < pic_count; ++i) {
+    for (int i = 0; i < pic_count_; ++i) {
       pics.emplace_back(new WebPPicture, WebPPictureFree);
       auto& pic = pics.back();
       WebPPictureInit(pic.get());
       pic.get()->use_argb = 1;
-      pic.get()->width = width;
-      pic.get()->height = height;
-      WebPPictureImportRGBA(pic.get(), GenerateRGBA(i).data(), width * 4);
+      pic.get()->width = width_;
+      pic.get()->height = height_;
+      WebPPictureImportRGBA(pic.get(), GenerateRGBA(i).data(), width_ * 4);
     }
     return pics;
   }
 
  private:
-  int pic_count;
-  int width;
-  int height;
-  bool randomized;
-  uint8_t transparency;
+  int pic_count_;
+  int width_;
+  int height_;
+  bool randomized_;
+  uint8_t transparency_;
+
+  // Returns RGBA values for WebPPicture.
+  std::vector<uint8_t> GenerateRGBA(int seed) {
+    std::mt19937 rng(seed);
+    std::vector<uint8_t> rgba;
+
+    uint8_t color_R = rng() & 0xff;
+    uint8_t color_G = rng() & 0xff;
+    uint8_t color_B = rng() & 0xff;
+
+    for (int i = 0; i < height_; ++i) {
+      for (int j = 0; j < width_; ++j) {
+        rgba.push_back(randomized_ ? rng() & 0xff : color_R);
+        rgba.push_back(randomized_ ? rng() & 0xff : color_G);
+        rgba.push_back(randomized_ ? rng() & 0xff : color_B);
+        rgba.push_back(transparency_);
+      }
+    }
+    return rgba;
+  }
 };
 
-TEST(blank_image_solid, blank_images) {
+TEST(ThumbnailerTest, BlankImageSolid) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
@@ -91,10 +92,12 @@ TEST(blank_image_solid, blank_images) {
                                                            WebPDataClear);
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
-  EXPECT_LE(webp_data.get()->size, 153600);
+
+  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
+  EXPECT_GT(webp_data.get()->size, 0);
 }
 
-TEST(blank_image_transparent, blank_images) {
+TEST(ThumbnailerTest, BlankImageTransparent) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
@@ -108,10 +111,12 @@ TEST(blank_image_transparent, blank_images) {
                                                            WebPDataClear);
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
-  EXPECT_LE(webp_data.get()->size, 153600);
+
+  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
+  EXPECT_GT(webp_data.get()->size, 0);
 }
 
-TEST(randomized_image_solid, randomized_images) {
+TEST(ThumbnailerTest, NoisyImageSolid) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
@@ -125,10 +130,12 @@ TEST(randomized_image_solid, randomized_images) {
                                                            WebPDataClear);
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
-  EXPECT_LE(webp_data.get()->size, 153600);
+
+  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
+  EXPECT_GT(webp_data.get()->size, 0);
 }
 
-TEST(randomized_image_transparent, randomized_images) {
+TEST(ThumbnailerTest, NoisyImageTransparent) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
@@ -142,7 +149,9 @@ TEST(randomized_image_transparent, randomized_images) {
                                                            WebPDataClear);
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
-  EXPECT_LE(webp_data.get()->size, 153600);
+
+  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
+  EXPECT_GT(webp_data.get()->size, 0);
 }
 
 int main(int argc, char* argv[]) {
