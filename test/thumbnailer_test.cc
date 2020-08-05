@@ -42,9 +42,9 @@ class WebPSamplesGenerator {
       pics.emplace_back(new WebPPicture, WebPPictureFree);
       auto& pic = pics.back();
       WebPPictureInit(pic.get());
-      pic.get()->use_argb = 1;
-      pic.get()->width = width_;
-      pic.get()->height = height_;
+      pic->use_argb = 1;
+      pic->width = width_;
+      pic->height = height_;
       WebPPictureImportRGBA(pic.get(), GenerateRGBA(i).data(), width_ * 4);
     }
     return pics;
@@ -82,8 +82,10 @@ TEST(ThumbnailerTest, BlankImageSolid) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
-  WebPSamplesGenerator Generator = WebPSamplesGenerator(pic_count, 0xff, false);
-  auto test_pics = Generator.GeneratePics();
+  uint8_t transparency = 0xff;
+  bool use_randomized = false;
+  auto test_pics = WebPSamplesGenerator(pic_count, transparency, use_randomized)
+                       .GeneratePics();
 
   for (int i = 0; i < pic_count; ++i) {
     thumbnailer.AddFrame(*test_pics[i].get(), i * 500);
@@ -93,16 +95,18 @@ TEST(ThumbnailerTest, BlankImageSolid) {
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
 
-  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
-  EXPECT_GT(webp_data.get()->size, 0);
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
 }
 
 TEST(ThumbnailerTest, BlankImageTransparent) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
-  WebPSamplesGenerator Generator = WebPSamplesGenerator(pic_count, 0xaf, false);
-  auto test_pics = Generator.GeneratePics();
+  uint8_t transparency = 0xaf;
+  bool use_randomized = false;
+  auto test_pics = WebPSamplesGenerator(pic_count, transparency, use_randomized)
+                       .GeneratePics();
 
   for (int i = 0; i < pic_count; ++i) {
     thumbnailer.AddFrame(*test_pics[i].get(), i * 500);
@@ -112,16 +116,18 @@ TEST(ThumbnailerTest, BlankImageTransparent) {
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
 
-  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
-  EXPECT_GT(webp_data.get()->size, 0);
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
 }
 
 TEST(ThumbnailerTest, NoisyImageSolid) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
-  WebPSamplesGenerator Generator = WebPSamplesGenerator(pic_count, 0xff, true);
-  auto test_pics = Generator.GeneratePics();
+  uint8_t transparency = 0xff;
+  bool use_randomized = true;
+  auto test_pics = WebPSamplesGenerator(pic_count, transparency, use_randomized)
+                       .GeneratePics();
 
   for (int i = 0; i < pic_count; ++i) {
     thumbnailer.AddFrame(*test_pics[i].get(), i * 500);
@@ -131,16 +137,18 @@ TEST(ThumbnailerTest, NoisyImageSolid) {
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
 
-  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
-  EXPECT_GT(webp_data.get()->size, 0);
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
 }
 
 TEST(ThumbnailerTest, NoisyImageTransparent) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
 
   int pic_count = 10;
-  WebPSamplesGenerator Generator = WebPSamplesGenerator(pic_count, 0xaf, true);
-  auto test_pics = Generator.GeneratePics();
+  uint8_t transparency = 0xaf;
+  bool use_randomized = true;
+  auto test_pics = WebPSamplesGenerator(pic_count, transparency, use_randomized)
+                       .GeneratePics();
 
   for (int i = 0; i < pic_count; ++i) {
     thumbnailer.AddFrame(*test_pics[i].get(), i * 500);
@@ -150,8 +158,8 @@ TEST(ThumbnailerTest, NoisyImageTransparent) {
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
 
-  EXPECT_LE(webp_data.get()->size, kDefaultBudget);
-  EXPECT_GT(webp_data.get()->size, 0);
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
 }
 
 int main(int argc, char* argv[]) {
