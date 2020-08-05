@@ -19,6 +19,9 @@ namespace libwebp {
 Thumbnailer::Thumbnailer() {
   WebPAnimEncoderOptionsInit(&anim_config_);
   WebPConfigInit(&config_);
+  loop_count_ = 0;
+  byte_budget_ = 153600;
+  minimum_lossy_quality_ = 0;
 }
 
 Thumbnailer::Thumbnailer(
@@ -52,7 +55,8 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
     WebPData* const webp_data) {
-  // Initialize WebPAnimEncoder object.
+  // Delete the previous WebPAnimEncoder object and initialize a new one.
+  WebPAnimEncoderDelete(enc_);
   enc_ = WebPAnimEncoderNew((frames_[0].pic).width, (frames_[0].pic).height,
                             &anim_config_);
   if (enc_ == nullptr) {
@@ -125,6 +129,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     int middle = (min_quality + max_quality) / 2;
 
     config_.quality = middle;
+    WebPDataClear(webp_data);
     GenerateAnimationNoBudget(&new_webp_data);
 
     if (new_webp_data.size <= byte_budget_) {
