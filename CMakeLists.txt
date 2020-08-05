@@ -6,6 +6,8 @@ project(
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
+enable_testing()
+
 # Image IO
 add_library(imageio_util STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/imageio_util.c)
 target_link_libraries(imageio_util webp)
@@ -54,3 +56,5 @@ target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 
 add_executable(thumbnailer ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 target_link_libraries(thumbnailer thumbnailer_lib imagedec webpmux)
+
+add_subdirectory(test)
