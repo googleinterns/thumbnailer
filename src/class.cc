@@ -121,13 +121,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   // below the given byte budget.
   int min_quality = minimum_lossy_quality_;
   int max_quality = 100;
-  int middle;
   int final_quality = -1;
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
 
   while (min_quality <= max_quality) {
-    middle = (min_quality + max_quality) / 2;
+    int middle = (min_quality + max_quality) / 2;
     config_.quality = middle;
     GenerateAnimationNoBudget(&new_webp_data);
 
