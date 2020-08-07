@@ -129,7 +129,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     int middle = (min_quality + max_quality) / 2;
 
     config_.quality = middle;
-    WebPDataClear(webp_data);
+    WebPDataClear(&new_webp_data);
     GenerateAnimationNoBudget(&new_webp_data);
 
     if (new_webp_data.size <= byte_budget_) {
