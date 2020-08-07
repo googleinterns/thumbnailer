@@ -48,14 +48,17 @@ class Thumbnailer {
                       // byte budget.
   };
 
-  // Adds a frame with a timestamp (in millisecond).
+  // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
+  // outlive the last GenerateAnimation() call.
   Status AddFrame(const WebPPicture& pic, int timestamp_ms);
 
   // Generates the animation.
   Status GenerateAnimationNoBudget(WebPData* const webp_data);
 
   // Finds the best quality that makes the animation fit right below the given
-  // byte budget and generates the animation.
+  // byte budget and generates the animation. The 'webp_data' argument is
+  // expected to be initialized (otherwise WebPDataClear() might free some
+  // random memory somewhere because the pointer is undefined).
   Status GenerateAnimation(WebPData* const webp_data);
 
  private:

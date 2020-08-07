@@ -48,11 +48,7 @@ int main(int argc, char* argv[]) {
     pics.emplace_back(new WebPPicture, WebPPictureFree);
     WebPPictureInit(pics.back().get());
 
-    // convert std::string to char*
-    char filename[filename_str.length()];
-    strcpy(filename, filename_str.c_str());
-
-    ReadImage(filename, pics.back().get());
+    ReadImage(filename_str.c_str(), pics.back().get());
     thumbnailer.AddFrame(*pics.back().get(), timestamp_ms);
   }
 
