@@ -61,6 +61,9 @@ class Thumbnailer {
   // random memory somewhere because the pointer is undefined).
   Status GenerateAnimation(WebPData* const webp_data);
 
+  // Generates the animation so that all frames have similar PSNR (all) values.
+  Status GenerateAnimationEqualPSNR(WebPData* const web_data);
+
  private:
   struct FrameData {
     WebPPicture pic;

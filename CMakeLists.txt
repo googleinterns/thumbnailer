@@ -50,7 +50,7 @@ include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.proto)
 
-add_library(thumbnailer_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/class.cc ${PROTO_SRCS})
+add_library(thumbnailer_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.cc ${PROTO_SRCS})
 target_include_directories(thumbnailer_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 

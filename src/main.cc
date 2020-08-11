@@ -16,7 +16,7 @@
 #include <iostream>
 #include <string>
 
-#include "class.h"
+#include "thumbnailer.h"
 #include "thumbnailer.pb.h"
 
 // Returns true on success or false on failure.
@@ -56,7 +56,12 @@ int main(int argc, char* argv[]) {
   const char* output = argv[2];
   WebPData webp_data;
   WebPDataInit(&webp_data);
-  thumbnailer.GenerateAnimation(&webp_data);
+  if (argc >= 4 && !strcmp(argv[3], "psnr")) {
+    std::cerr << "nope";
+    thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
+  } else {
+    thumbnailer.GenerateAnimation(&webp_data);
+  }
   ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
   WebPDataClear(&webp_data);
 

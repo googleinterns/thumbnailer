@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "../src/thumbnailer.h"
+
 #include <random>
 
-#include "../src/class.h"
 #include "gtest/gtest.h"
 
 const int kDefaultWidth = 80;
@@ -181,6 +182,48 @@ TEST(ThumbnailerTest, NoisyImageTransparent) {
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
   thumbnailer.GenerateAnimation(webp_data.get());
+
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
+}
+
+TEST(ThumbnailerPSNRTest, NoisyImageSolid) {
+  libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
+
+  const int pic_count = 10;
+  const uint8_t transparency = 0xff;
+  const bool use_randomized = true;
+  auto test_pics = WebPSamplesGenerator(pic_count, transparency, use_randomized)
+                       .GeneratePics();
+
+  for (int i = 0; i < pic_count; ++i) {
+    thumbnailer.AddFrame(*test_pics[i].get(), i * 500);
+  }
+  std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
+                                                           WebPDataDelete);
+  WebPDataInit(webp_data.get());
+  thumbnailer.GenerateAnimationEqualPSNR(webp_data.get());
+
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
+}
+
+TEST(ThumbnailerPSNRTest, NoisyImageTransparent) {
+  libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
+
+  const int pic_count = 10;
+  const uint8_t transparency = 0xaf;
+  const bool use_randomized = true;
+  auto test_pics = WebPSamplesGenerator(pic_count, transparency, use_randomized)
+                       .GeneratePics();
+
+  for (int i = 0; i < pic_count; ++i) {
+    thumbnailer.AddFrame(*test_pics[i].get(), i * 500);
+  }
+  std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
+                                                           WebPDataDelete);
+  WebPDataInit(webp_data.get());
+  thumbnailer.GenerateAnimationEqualPSNR(webp_data.get());
 
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);

@@ -14,7 +14,7 @@ message ThumbnailerOption {
   optional uint32 estimated_num_frames = 2 [default = 50];
 
   // Number of times animation will loop.
-  optional int32 loop_count = 3 [default = 1];
+  optional int32 loop_count = 3 [default = 0];
 
   // Minimum lossy quality to be used for encoding each frame.
   optional int32 min_lossy_quality = 4 [default = 0];
