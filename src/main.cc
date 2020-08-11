@@ -52,12 +52,13 @@ int main(int argc, char* argv[]) {
     thumbnailer.AddFrame(*pics.back().get(), timestamp_ms);
   }
 
+  thumbnailer.SortFrames();
+
   // Write animation to file.
   const char* output = argv[2];
   WebPData webp_data;
   WebPDataInit(&webp_data);
   if (argc >= 4 && !strcmp(argv[3], "psnr")) {
-    std::cerr << "nope";
     thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
   } else {
     thumbnailer.GenerateAnimation(&webp_data);

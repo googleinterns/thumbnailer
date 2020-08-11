@@ -51,6 +51,13 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   return kOk;
 }
 
+void Thumbnailer::SortFrames() {
+  std::sort(frames_.begin(), frames_.end(),
+            [](const FrameData& A, const FrameData& B) -> bool {
+              return A.timestamp_ms < B.timestamp_ms;
+            });
+}
+
 Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
     WebPData* const webp_data) {
   // Delete the previous WebPAnimEncoder object and initialize a new one.
@@ -107,12 +114,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
-  // Rearrange frames.
-  std::sort(frames_.begin(), frames_.end(),
-            [](const FrameData& A, const FrameData& B) -> bool {
-              return A.timestamp_ms < B.timestamp_ms;
-            });
-
   // Use binary search to find the quality that makes the animation fit right
   // below the given byte budget.
   int min_quality = minimum_lossy_quality_;
@@ -146,20 +147,27 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   return kOk;
 }
 
+int Thumbnailer::GetPSNR(WebPPicture* const pic, int quality) {
+  WebPPicture new_pic;
+  WebPPictureInit(&new_pic);
+  WebPPictureCopy(pic, &new_pic);
+
+  WebPAuxStats stats;
+  new_pic.stats = &stats;
+
+  config_.quality = quality;
+  WebPEncode(&config_, &new_pic);
+  int result_psnr = new_pic.stats->PSNR[3];  // PSNR-all.
+  WebPPictureFree(&new_pic);
+
+  return result_psnr;
+}
+
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     WebPData* const webp_data) {
-  // Rearrange frames.
-  std::sort(frames_.begin(), frames_.end(),
-            [](const FrameData& A, const FrameData& B) -> bool {
-              return A.timestamp_ms < B.timestamp_ms;
-            });
-
   int final_psnr = -1;
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
-  WebPPicture pic;
-  WebPPictureInit(&pic);
-  WebPAuxStats stats;
 
   for (int target_psnr = 99; target_psnr > 0; --target_psnr) {
     std::cerr << "Target PSNR: " << target_psnr << ". ";
@@ -179,22 +187,10 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
         int final_quality = -1;
 
         // Get lowest PSNR value possible.
-        WebPPictureInit(&pic);
-        WebPPictureCopy(&frame.pic, &pic);
-        pic.stats = &stats;
-        config_.quality = min_quality;
-        WebPEncode(&config_, &pic);
-        int low_psnr = pic.stats->PSNR[3];
-        WebPPictureFree(&pic);
+        int low_psnr = GetPSNR(&frame.pic, min_quality);
 
         // Get highest PSNR value possible.
-        WebPPictureInit(&pic);
-        WebPPictureCopy(&frame.pic, &pic);
-        pic.stats = &stats;
-        config_.quality = max_quality;
-        WebPEncode(&config_, &pic);
-        int high_psnr = pic.stats->PSNR[3];  // PSNR-all.
-        WebPPictureFree(&pic);
+        int high_psnr = GetPSNR(&frame.pic, max_quality);
 
         // Target PSNR is out of range.
         if (target_psnr > high_psnr || target_psnr < low_psnr) {
@@ -207,13 +203,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
         // Binary search for quality value.
         while (min_quality + quality_tolerance <= max_quality) {
           int mid_quality = (min_quality + max_quality) / 2;
-          config_.quality = mid_quality;
-          WebPPictureInit(&pic);
-          WebPPictureCopy(&frame.pic, &pic);
-          pic.stats = &stats;
-          WebPEncode(&config_, &pic);
-          int current_psnr = pic.stats->PSNR[3];
-          WebPPictureFree(&pic);
+          int current_psnr = GetPSNR(&frame.pic, mid_quality);
 
           if (current_psnr <= target_psnr) {
             final_quality = mid_quality;
@@ -257,7 +247,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   }
 
   std::cerr << std::endl;
-  std::cerr << "Final PSNR:" << final_psnr << std::endl;
+  std::cerr << "Final PSNR: " << final_psnr << std::endl;
   return kOk;
 }
 

@@ -52,6 +52,8 @@ class Thumbnailer {
   // outlive the last GenerateAnimation() call.
   Status AddFrame(const WebPPicture& pic, int timestamp_ms);
 
+  void SortFrames();
+
   // Generates the animation.
   Status GenerateAnimationNoBudget(WebPData* const webp_data);
 
@@ -60,6 +62,9 @@ class Thumbnailer {
   // expected to be initialized (otherwise WebPDataClear() might free some
   // random memory somewhere because the pointer is undefined).
   Status GenerateAnimation(WebPData* const webp_data);
+
+  // Returns the PSNR value of a re-encoded WebPPicture at given quality.
+  int GetPSNR(WebPPicture* const pic, int quality);
 
   // Generates the animation so that all frames have similar PSNR (all) values.
   Status GenerateAnimationEqualPSNR(WebPData* const web_data);
