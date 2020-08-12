@@ -27,7 +27,6 @@ Thumbnailer::Thumbnailer() {
 Thumbnailer::Thumbnailer(
     const thumbnailer::ThumbnailerOption& thumbnailer_option) {
   WebPAnimEncoderOptionsInit(&anim_config_);
-  anim_config_.kmax = 1;  // all frames are key-frames
   WebPConfigInit(&config_);
   loop_count_ = thumbnailer_option.loop_count();
   byte_budget_ = thumbnailer_option.soft_max_size();
@@ -83,34 +82,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
   }
 
   if (loop_count_ == 0) return kOk;
-
-  // Set loop count.
-  WebPMuxError err;
-  WebPMuxAnimParams new_params;
-  uint32_t features;
-
-  std::unique_ptr<WebPMux, void (*)(WebPMux*)> mux(WebPMuxCreate(webp_data, 1),
-                                                   WebPMuxDelete);
-
-  if (mux.get() == nullptr) return kMemoryError;
-
-  if (WebPMuxGetFeatures(mux.get(), &features) != WEBP_MUX_OK) {
-    return kMemoryError;
-  }
-
-  if (WebPMuxGetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
-    return kMemoryError;
-  }
-
-  new_params.loop_count = loop_count_;
-  if (WebPMuxSetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
-    return kMemoryError;
-  }
-
-  WebPDataClear(webp_data);
-  if (WebPMuxAssemble(mux.get(), webp_data) != WEBP_MUX_OK) return kMemoryError;
-
-  return kOk;
+  return SetLoopCount(webp_data);
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
@@ -138,11 +110,11 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     }
   }
 
+  config_.quality = final_quality;
+
   if (final_quality == -1) {
     return kByteBudgetError;
   }
-
-  config_.quality = final_quality;
 
   return kOk;
 }
@@ -165,11 +137,28 @@ int Thumbnailer::GetPSNR(WebPPicture* const pic, int quality) {
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     WebPData* const webp_data) {
-  int final_psnr = -1;
+  // GenerateAnimation failed.
+  if (config_.quality == -1) return kByteBudgetError;
+
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
 
-  for (int target_psnr = 99; target_psnr > 0; --target_psnr) {
+  int high_psnr = -1;
+  int low_psnr = -1;
+  int final_psnr = -1;
+
+  // Find PSNR search range.
+  for (auto& frame : frames_) {
+    int frame_psnr = GetPSNR(&frame.pic, config_.quality);
+    if (high_psnr == -1 || frame_psnr > high_psnr) {
+      high_psnr = frame_psnr;
+    }
+    if (low_psnr == -1 || frame_psnr < low_psnr) {
+      low_psnr = frame_psnr;
+    }
+  }
+
+  for (int target_psnr = high_psnr; target_psnr >= low_psnr; --target_psnr) {
     std::cerr << "Target PSNR: " << target_psnr << ". ";
     bool ok = true;
 
@@ -182,43 +171,42 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     // having PSNR close to target_psnr.
     if (ok)
       for (auto& frame : frames_) {
-        int min_quality = 0;
-        int max_quality = 100;
-        int final_quality = -1;
+        int frame_min_quality = 0;
+        int frame_max_quality = 100;
+        int frame_final_quality = -1;
 
-        // Get lowest PSNR value possible.
-        int low_psnr = GetPSNR(&frame.pic, min_quality);
-
-        // Get highest PSNR value possible.
-        int high_psnr = GetPSNR(&frame.pic, max_quality);
+        int frame_lowest_psnr = GetPSNR(&frame.pic, frame_min_quality);
+        int frame_highest_psnr = GetPSNR(&frame.pic, frame_max_quality);
 
         // Target PSNR is out of range.
-        if (target_psnr > high_psnr || target_psnr < low_psnr) {
+        if (target_psnr > frame_highest_psnr ||
+            target_psnr < frame_lowest_psnr) {
           ok = false;
+          std::cerr << "Target PSNR is out of range." << std::endl;
           break;
         }
 
-        const int quality_tolerance = 2;
+        const int quality_tolerance = 1;
 
         // Binary search for quality value.
-        while (min_quality + quality_tolerance <= max_quality) {
-          int mid_quality = (min_quality + max_quality) / 2;
-          int current_psnr = GetPSNR(&frame.pic, mid_quality);
+        while (frame_min_quality + quality_tolerance <= frame_max_quality) {
+          int frame_mid_quality = (frame_min_quality + frame_max_quality) / 2;
+          int current_psnr = GetPSNR(&frame.pic, frame_mid_quality);
 
           if (current_psnr <= target_psnr) {
-            final_quality = mid_quality;
-            min_quality = mid_quality + 1;
+            frame_final_quality = frame_mid_quality;
+            frame_min_quality = frame_mid_quality + 1;
           } else {
-            max_quality = mid_quality - 1;
+            frame_max_quality = frame_mid_quality - 1;
           }
         }
 
-        if (final_quality == -1) {
+        if (frame_final_quality == -1) {
           ok = false;
           break;
         }
 
-        config_.quality = final_quality;
+        config_.quality = frame_final_quality;
         std::cerr << config_.quality << ' ';
         if (!WebPAnimEncoderAdd(enc_, &frame.pic, frame.timestamp_ms,
                                 &config_)) {
@@ -248,6 +236,37 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
   std::cerr << std::endl;
   std::cerr << "Final PSNR: " << final_psnr << std::endl;
+
+  if (loop_count_ == 0) return kOk;
+  return SetLoopCount(webp_data);
+}
+
+Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
+  WebPMuxError err;
+  WebPMuxAnimParams new_params;
+  uint32_t features;
+
+  std::unique_ptr<WebPMux, void (*)(WebPMux*)> mux(WebPMuxCreate(webp_data, 1),
+                                                   WebPMuxDelete);
+
+  if (mux.get() == nullptr) return kMemoryError;
+
+  if (WebPMuxGetFeatures(mux.get(), &features) != WEBP_MUX_OK) {
+    return kMemoryError;
+  }
+
+  if (WebPMuxGetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
+    return kMemoryError;
+  }
+
+  new_params.loop_count = loop_count_;
+  if (WebPMuxSetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
+    return kMemoryError;
+  }
+
+  WebPDataClear(webp_data);
+  if (WebPMuxAssemble(mux.get(), webp_data) != WEBP_MUX_OK) return kMemoryError;
+
   return kOk;
 }
 

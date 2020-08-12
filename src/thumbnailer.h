@@ -67,7 +67,9 @@ class Thumbnailer {
   int GetPSNR(WebPPicture* const pic, int quality);
 
   // Generates the animation so that all frames have similar PSNR (all) values.
-  Status GenerateAnimationEqualPSNR(WebPData* const web_data);
+  Status GenerateAnimationEqualPSNR(WebPData* const webp_data);
+
+  Status SetLoopCount(WebPData* const webp_data);
 
  private:
   struct FrameData {
