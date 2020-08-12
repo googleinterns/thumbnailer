@@ -50,18 +50,11 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   return kOk;
 }
 
-void Thumbnailer::SortFrames() {
-  std::sort(frames_.begin(), frames_.end(),
-            [](const FrameData& A, const FrameData& B) -> bool {
-              return A.timestamp_ms < B.timestamp_ms;
-            });
-}
-
 Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
     WebPData* const webp_data) {
   // Delete the previous WebPAnimEncoder object and initialize a new one.
   WebPAnimEncoderDelete(enc_);
-  enc_ = WebPAnimEncoderNew((frames_[0].pic).width, (frames_[0].pic).height,
+  enc_ = WebPAnimEncoderNew(frames_[0].pic.width, frames_[0].pic.height,
                             &anim_config_);
   if (enc_ == nullptr) return kMemoryError;
 
@@ -86,8 +79,15 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
+  // Sort frames.
+  std::sort(frames_.begin(), frames_.end(),
+            [](const FrameData& a, const FrameData& b) -> bool {
+              return a.timestamp_ms < b.timestamp_ms;
+            });
+
   // Use binary search to find the quality that makes the animation fit right
   // below the given byte budget.
+
   int min_quality = minimum_lossy_quality_;
   int max_quality = 100;
   int final_quality = -1;
@@ -129,7 +129,7 @@ int Thumbnailer::GetPSNR(WebPPicture* const pic, int quality) {
 
   config_.quality = quality;
   WebPEncode(&config_, &new_pic);
-  int result_psnr = new_pic.stats->PSNR[3];  // PSNR-all.
+  int result_psnr = std::round(new_pic.stats->PSNR[3]);  // PSNR-all.
   WebPPictureFree(&new_pic);
 
   return result_psnr;
@@ -137,7 +137,7 @@ int Thumbnailer::GetPSNR(WebPPicture* const pic, int quality) {
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     WebPData* const webp_data) {
-  // GenerateAnimation failed.
+  GenerateAnimation(webp_data);
   if (config_.quality == -1) return kByteBudgetError;
 
   WebPData new_webp_data;
@@ -163,7 +163,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     bool ok = true;
 
     WebPAnimEncoderDelete(enc_);
-    enc_ = WebPAnimEncoderNew((frames_[0].pic).width, (frames_[0].pic).height,
+    enc_ = WebPAnimEncoderNew(frames_[0].pic.width, frames_[0].pic.height,
                               &anim_config_);
     if (enc_ == nullptr) ok = 0;
 
@@ -242,19 +242,11 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 }
 
 Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
-  WebPMuxError err;
-  WebPMuxAnimParams new_params;
-  uint32_t features;
-
   std::unique_ptr<WebPMux, void (*)(WebPMux*)> mux(WebPMuxCreate(webp_data, 1),
                                                    WebPMuxDelete);
+  if (mux == nullptr) return kMemoryError;
 
-  if (mux.get() == nullptr) return kMemoryError;
-
-  if (WebPMuxGetFeatures(mux.get(), &features) != WEBP_MUX_OK) {
-    return kMemoryError;
-  }
-
+  WebPMuxAnimParams new_params;
   if (WebPMuxGetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
     return kMemoryError;
   }

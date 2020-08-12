@@ -15,6 +15,7 @@
 #ifndef THUMBNAILER_SRC_CLASS_H_
 #define THUMBNAILER_SRC_CLASS_H_
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,8 +52,6 @@ class Thumbnailer {
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
   // outlive the last GenerateAnimation() call.
   Status AddFrame(const WebPPicture& pic, int timestamp_ms);
-
-  void SortFrames();
 
   // Generates the animation.
   Status GenerateAnimationNoBudget(WebPData* const webp_data);
