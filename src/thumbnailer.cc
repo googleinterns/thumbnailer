@@ -87,7 +87,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
 
   // Use binary search to find the quality that makes the animation fit right
   // below the given byte budget.
-
   int min_quality = minimum_lossy_quality_;
   int max_quality = 100;
   int final_quality = -1;
@@ -102,43 +101,46 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     if (new_webp_data.size <= byte_budget_) {
       final_quality = middle;
       WebPDataClear(webp_data);
-      *webp_data = new_webp_data;
+      WebPDataCopy(&new_webp_data, webp_data);
       min_quality = middle + 1;
     } else {
       max_quality = middle - 1;
-      WebPDataClear(&new_webp_data);
     }
+    WebPDataClear(&new_webp_data);
   }
 
   config_.quality = final_quality;
-
-  if (final_quality == -1) {
-    return kByteBudgetError;
-  }
-
-  return kOk;
+  return (final_quality == -1) ? kByteBudgetError : kOk;
 }
 
 int Thumbnailer::GetPSNR(WebPPicture* const pic, int quality) {
+  const int failure = -1;
+
   WebPPicture new_pic;
   WebPPictureInit(&new_pic);
-  WebPPictureCopy(pic, &new_pic);
+  if (!WebPPictureCopy(pic, &new_pic)) {
+    WebPPictureFree(&new_pic);
+    return failure;
+  }
 
   WebPAuxStats stats;
   new_pic.stats = &stats;
-
   config_.quality = quality;
-  WebPEncode(&config_, &new_pic);
-  int result_psnr = std::round(new_pic.stats->PSNR[3]);  // PSNR-all.
-  WebPPictureFree(&new_pic);
+  if (!WebPEncode(&config_, &new_pic)) {
+    WebPPictureFree(&new_pic);
+    return failure;
+  }
 
+  int result_psnr = std::floor(new_pic.stats->PSNR[3]);  // PSNR-all.
+  WebPPictureFree(&new_pic);
   return result_psnr;
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     WebPData* const webp_data) {
-  GenerateAnimation(webp_data);
-  if (config_.quality == -1) return kByteBudgetError;
+  if (GenerateAnimation(webp_data) != kOk) {
+    return kByteBudgetError;
+  }
 
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
@@ -159,83 +161,82 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   }
 
   for (int target_psnr = high_psnr; target_psnr >= low_psnr; --target_psnr) {
-    std::cerr << "Target PSNR: " << target_psnr << ". ";
+    std::cerr << "Target PSNR: " << target_psnr << ". Quality: ";
     bool ok = true;
 
     WebPAnimEncoderDelete(enc_);
     enc_ = WebPAnimEncoderNew(frames_[0].pic.width, frames_[0].pic.height,
                               &anim_config_);
-    if (enc_ == nullptr) ok = 0;
+    if (enc_ == nullptr) {
+      WebPDataClear(&new_webp_data);
+      return kMemoryError;
+    }
 
     // For each frame, find the quality value that produces WebPPicture
     // having PSNR close to target_psnr.
-    if (ok)
-      for (auto& frame : frames_) {
-        int frame_min_quality = 0;
-        int frame_max_quality = 100;
-        int frame_final_quality = -1;
+    for (auto& frame : frames_) {
+      int frame_min_quality = 0;
+      int frame_max_quality = 100;
+      int frame_final_quality = -1;
 
-        int frame_lowest_psnr = GetPSNR(&frame.pic, frame_min_quality);
-        int frame_highest_psnr = GetPSNR(&frame.pic, frame_max_quality);
+      int frame_lowest_psnr = GetPSNR(&frame.pic, frame_min_quality);
+      int frame_highest_psnr = GetPSNR(&frame.pic, frame_max_quality);
 
-        // Target PSNR is out of range.
-        if (target_psnr > frame_highest_psnr ||
-            target_psnr < frame_lowest_psnr) {
-          ok = false;
-          std::cerr << "Target PSNR is out of range." << std::endl;
-          break;
-        }
+      // Target PSNR is out of range.
+      if (target_psnr > frame_highest_psnr || target_psnr < frame_lowest_psnr) {
+        ok = false;
+        std::cerr << "Target PSNR is out of range." << std::endl;
+        break;
+      }
 
-        const int quality_tolerance = 1;
-
-        // Binary search for quality value.
-        while (frame_min_quality + quality_tolerance <= frame_max_quality) {
-          int frame_mid_quality = (frame_min_quality + frame_max_quality) / 2;
-          int current_psnr = GetPSNR(&frame.pic, frame_mid_quality);
-
-          if (current_psnr <= target_psnr) {
-            frame_final_quality = frame_mid_quality;
-            frame_min_quality = frame_mid_quality + 1;
-          } else {
-            frame_max_quality = frame_mid_quality - 1;
-          }
-        }
-
-        if (frame_final_quality == -1) {
-          ok = false;
-          break;
-        }
-
-        config_.quality = frame_final_quality;
-        std::cerr << config_.quality << ' ';
-        if (!WebPAnimEncoderAdd(enc_, &frame.pic, frame.timestamp_ms,
-                                &config_)) {
-          ok = false;
-          break;
+      // Binary search for quality value.
+      while (frame_min_quality <= frame_max_quality) {
+        int frame_mid_quality = (frame_min_quality + frame_max_quality) / 2;
+        int current_psnr = GetPSNR(&frame.pic, frame_mid_quality);
+        if (current_psnr == -1) break;
+        if (current_psnr <= target_psnr) {
+          frame_final_quality = frame_mid_quality;
+          frame_min_quality = frame_mid_quality + 1;
+        } else {
+          frame_max_quality = frame_mid_quality - 1;
         }
       }
+
+      if (frame_final_quality == -1) {
+        ok = false;
+        break;
+      }
+
+      config_.quality = frame_final_quality;
+
+      if (!WebPAnimEncoderAdd(enc_, &frame.pic, frame.timestamp_ms, &config_)) {
+        ok = false;
+        break;
+      }
+      std::cerr << config_.quality << ' ';
+    }
 
     // Add last frame.
     ok =
         ok && WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL);
     ok = ok && WebPAnimEncoderAssemble(enc_, &new_webp_data);
-
     if (ok && new_webp_data.size <= byte_budget_) {
       final_psnr = target_psnr;
       WebPDataClear(webp_data);
-      *webp_data = new_webp_data;
+      WebPDataCopy(&new_webp_data, webp_data);
+      WebPDataClear(&new_webp_data);
       break;
     } else {
       WebPDataClear(&new_webp_data);
       std::cerr << std::endl;
     }
   }
+
   if (final_psnr == -1) {
     return kByteBudgetError;
   }
 
-  std::cerr << std::endl;
-  std::cerr << "Final PSNR: " << final_psnr << std::endl;
+  std::cerr << std::endl << "Final PSNR: " << final_psnr << std::endl;
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);

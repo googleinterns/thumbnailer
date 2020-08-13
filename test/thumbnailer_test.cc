@@ -58,16 +58,21 @@ class WebPTestGenerator {
         randomized_(randomized) {}
 
   // Returns true on success and false on failure.
-  bool GenerateWebPData(WebPData* const webp_data) {
+  bool GenerateWebPData(WebPData* const webp_data, bool equal_PSNR) {
     libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
     auto test_pics = GeneratePics();
     for (int i = 0; i < pic_count_; ++i) {
-      if (thumbnailer.AddFrame(*test_pics[i].get(), i * 500) !=
-          thumbnailer.kOk) {
+      if (thumbnailer.AddFrame(*test_pics[i], i * 500) != thumbnailer.kOk) {
         return false;
       }
     }
-    return thumbnailer.GenerateAnimation(webp_data) == thumbnailer.kOk;
+    if (!equal_PSNR) {
+      return thumbnailer.GenerateAnimation(webp_data) ==
+             thumbnailer.Status::kOk;
+    } else {
+      return thumbnailer.GenerateAnimationEqualPSNR(webp_data) ==
+             thumbnailer.Status::kOk;
+    }
   }
 
  private:
@@ -98,8 +103,8 @@ class WebPTestGenerator {
   }
 
   // Returns vector of WebPPicture(s).
-  // randomized == true: picture is random noise
-  // randomized == false: picture is random solid color
+  // randomized_ == true: all pictures are random noise
+  // randomized_ == false: all pictures are random solid color
   std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>>
   GeneratePics() {
     std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
@@ -120,13 +125,12 @@ TEST(ThumbnailerTest, BlankImageSolid) {
   const int pic_count = 10;
   const uint8_t transparency = 0xff;
   const bool use_randomized = false;
+  const bool equal_PSNR = false;
   std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
-  bool ok = WebPTestGenerator(pic_count, transparency, use_randomized)
-                .GenerateWebPData(webp_data.get());
-
-  EXPECT_EQ(ok, true);
+  ASSERT_TRUE(WebPTestGenerator(pic_count, transparency, use_randomized)
+                  .GenerateWebPData(webp_data.get(), equal_PSNR));
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
@@ -135,14 +139,12 @@ TEST(ThumbnailerTest, BlankImageTransparent) {
   const int pic_count = 10;
   const uint8_t transparency = 0xaf;
   const bool use_randomized = false;
-
+  const bool equal_PSNR = false;
   std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
-  bool ok = WebPTestGenerator(pic_count, transparency, use_randomized)
-                .GenerateWebPData(webp_data.get());
-
-  EXPECT_EQ(ok, true);
+  ASSERT_TRUE(WebPTestGenerator(pic_count, transparency, use_randomized)
+                  .GenerateWebPData(webp_data.get(), equal_PSNR));
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
@@ -151,14 +153,12 @@ TEST(ThumbnailerTest, NoisyImageSolid) {
   const int pic_count = 10;
   const uint8_t transparency = 0xff;
   const bool use_randomized = true;
-
+  const bool equal_PSNR = false;
   std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
-  bool ok = WebPTestGenerator(pic_count, transparency, use_randomized)
-                .GenerateWebPData(webp_data.get());
-
-  EXPECT_EQ(ok, true);
+  ASSERT_TRUE(WebPTestGenerator(pic_count, transparency, use_randomized)
+                  .GenerateWebPData(webp_data.get(), equal_PSNR));
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
@@ -167,14 +167,12 @@ TEST(ThumbnailerTest, NoisyImageTransparent) {
   const int pic_count = 10;
   const uint8_t transparency = 0xaf;
   const bool use_randomized = true;
-
+  const bool equal_PSNR = false;
   std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
-  bool ok = WebPTestGenerator(pic_count, transparency, use_randomized)
-                .GenerateWebPData(webp_data.get());
-
-  EXPECT_EQ(ok, true);
+  ASSERT_TRUE(WebPTestGenerator(pic_count, transparency, use_randomized)
+                  .GenerateWebPData(webp_data.get(), equal_PSNR));
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
@@ -183,14 +181,13 @@ TEST(ThumbnailerPSNRTest, NoisyImageSolid) {
   const int pic_count = 10;
   const uint8_t transparency = 0xff;
   const bool use_randomized = true;
-
+  const bool equal_PSNR = true;
   std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
-  bool ok = WebPTestGenerator(pic_count, transparency, use_randomized)
-                .GenerateWebPData(webp_data.get());
-
-  EXPECT_EQ(ok, true);
+  WebPDataInit(webp_data.get());
+  ASSERT_TRUE(WebPTestGenerator(pic_count, transparency, use_randomized)
+                  .GenerateWebPData(webp_data.get(), equal_PSNR));
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
@@ -199,14 +196,12 @@ TEST(ThumbnailerPSNRTest, NoisyImageTransparent) {
   const int pic_count = 10;
   const uint8_t transparency = 0xaf;
   const bool use_randomized = true;
-
+  const bool equal_PSNR = true;
   std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
-  bool ok = WebPTestGenerator(pic_count, transparency, use_randomized)
-                .GenerateWebPData(webp_data.get());
-
-  EXPECT_EQ(ok, true);
+  ASSERT_TRUE(WebPTestGenerator(pic_count, transparency, use_randomized)
+                  .GenerateWebPData(webp_data.get(), equal_PSNR));
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }

@@ -63,6 +63,7 @@ class Thumbnailer {
   Status GenerateAnimation(WebPData* const webp_data);
 
   // Returns the PSNR value of a re-encoded WebPPicture at given quality.
+  // Returns -1 on errors.
   int GetPSNR(WebPPicture* const pic, int quality);
 
   // Generates the animation so that all frames have similar PSNR (all) values.
