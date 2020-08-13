@@ -96,7 +96,11 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   while (min_quality <= max_quality) {
     int middle = (min_quality + max_quality) / 2;
     config_.quality = middle;
-    GenerateAnimationNoBudget(&new_webp_data);
+
+    if (GenerateAnimationNoBudget(&new_webp_data) != kOk) {
+      WebPDataClear(&new_webp_data);
+      return kMemoryError;
+    }
 
     if (new_webp_data.size <= byte_budget_) {
       final_quality = middle;
@@ -142,9 +146,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     return kByteBudgetError;
   }
 
-  WebPData new_webp_data;
-  WebPDataInit(&new_webp_data);
-
   int high_psnr = -1;
   int low_psnr = -1;
   int final_psnr = -1;
@@ -152,6 +153,9 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   // Find PSNR search range.
   for (auto& frame : frames_) {
     int frame_psnr = GetPSNR(&frame.pic, config_.quality);
+    if (frame_psnr == -1) {
+      return kMemoryError;
+    }
     if (high_psnr == -1 || frame_psnr > high_psnr) {
       high_psnr = frame_psnr;
     }
@@ -162,15 +166,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
   for (int target_psnr = high_psnr; target_psnr >= low_psnr; --target_psnr) {
     std::cerr << "Target PSNR: " << target_psnr << ". Quality: ";
-    bool ok = true;
+    bool all_frames_iterated = true;
 
     WebPAnimEncoderDelete(enc_);
     enc_ = WebPAnimEncoderNew(frames_[0].pic.width, frames_[0].pic.height,
                               &anim_config_);
-    if (enc_ == nullptr) {
-      WebPDataClear(&new_webp_data);
-      return kMemoryError;
-    }
+    if (enc_ == nullptr) return kMemoryError;
 
     // For each frame, find the quality value that produces WebPPicture
     // having PSNR close to target_psnr.
@@ -182,9 +183,13 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       int frame_lowest_psnr = GetPSNR(&frame.pic, frame_min_quality);
       int frame_highest_psnr = GetPSNR(&frame.pic, frame_max_quality);
 
+      if (frame_lowest_psnr == -1 || frame_highest_psnr == -1) {
+        return kMemoryError;
+      }
+
       // Target PSNR is out of range.
       if (target_psnr > frame_highest_psnr || target_psnr < frame_lowest_psnr) {
-        ok = false;
+        all_frames_iterated = false;
         std::cerr << "Target PSNR is out of range." << std::endl;
         break;
       }
@@ -193,7 +198,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       while (frame_min_quality <= frame_max_quality) {
         int frame_mid_quality = (frame_min_quality + frame_max_quality) / 2;
         int current_psnr = GetPSNR(&frame.pic, frame_mid_quality);
-        if (current_psnr == -1) break;
+        if (current_psnr == -1) return kMemoryError;
         if (current_psnr <= target_psnr) {
           frame_final_quality = frame_mid_quality;
           frame_min_quality = frame_mid_quality + 1;
@@ -201,26 +206,28 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
           frame_max_quality = frame_mid_quality - 1;
         }
       }
-
-      if (frame_final_quality == -1) {
-        ok = false;
-        break;
-      }
-
       config_.quality = frame_final_quality;
 
       if (!WebPAnimEncoderAdd(enc_, &frame.pic, frame.timestamp_ms, &config_)) {
-        ok = false;
-        break;
+        return kMemoryError;
       }
+
       std::cerr << config_.quality << ' ';
     }
 
     // Add last frame.
-    ok =
-        ok && WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL);
-    ok = ok && WebPAnimEncoderAssemble(enc_, &new_webp_data);
-    if (ok && new_webp_data.size <= byte_budget_) {
+    if (!WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL)) {
+      return kMemoryError;
+    }
+
+    WebPData new_webp_data;
+    WebPDataInit(&new_webp_data);
+    if (!WebPAnimEncoderAssemble(enc_, &new_webp_data)) {
+      WebPDataClear(&new_webp_data);
+      return kMemoryError;
+    }
+
+    if (all_frames_iterated && new_webp_data.size <= byte_budget_) {
       final_psnr = target_psnr;
       WebPDataClear(webp_data);
       WebPDataCopy(&new_webp_data, webp_data);
