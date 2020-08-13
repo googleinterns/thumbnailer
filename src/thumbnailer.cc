@@ -98,19 +98,18 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     config_.quality = middle;
 
     if (GenerateAnimationNoBudget(&new_webp_data) != kOk) {
-      WebPDataClear(&new_webp_data);
       return kMemoryError;
     }
 
     if (new_webp_data.size <= byte_budget_) {
       final_quality = middle;
       WebPDataClear(webp_data);
-      WebPDataCopy(&new_webp_data, webp_data);
+      *webp_data = new_webp_data;
       min_quality = middle + 1;
     } else {
       max_quality = middle - 1;
+      WebPDataClear(&new_webp_data);
     }
-    WebPDataClear(&new_webp_data);
   }
 
   config_.quality = final_quality;
@@ -180,8 +179,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       int frame_max_quality = 100;
       int frame_final_quality = -1;
 
-      int frame_lowest_psnr = GetPSNR(&frame.pic, frame_min_quality);
-      int frame_highest_psnr = GetPSNR(&frame.pic, frame_max_quality);
+      const int frame_lowest_psnr = GetPSNR(&frame.pic, frame_min_quality);
+      const int frame_highest_psnr = GetPSNR(&frame.pic, frame_max_quality);
 
       if (frame_lowest_psnr == -1 || frame_highest_psnr == -1) {
         return kMemoryError;
@@ -219,23 +218,21 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     if (!WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL)) {
       return kMemoryError;
     }
-
-    WebPData new_webp_data;
-    WebPDataInit(&new_webp_data);
-    if (!WebPAnimEncoderAssemble(enc_, &new_webp_data)) {
-      WebPDataClear(&new_webp_data);
-      return kMemoryError;
-    }
-
-    if (all_frames_iterated && new_webp_data.size <= byte_budget_) {
-      final_psnr = target_psnr;
-      WebPDataClear(webp_data);
-      WebPDataCopy(&new_webp_data, webp_data);
-      WebPDataClear(&new_webp_data);
-      break;
-    } else {
-      WebPDataClear(&new_webp_data);
-      std::cerr << std::endl;
+    if (all_frames_iterated) {
+      WebPData new_webp_data;
+      WebPDataInit(&new_webp_data);
+      if (!WebPAnimEncoderAssemble(enc_, &new_webp_data)) {
+        return kMemoryError;
+      }
+      if (new_webp_data.size <= byte_budget_) {
+        final_psnr = target_psnr;
+        WebPDataClear(webp_data);
+        *webp_data = new_webp_data;
+        break;
+      } else {
+        WebPDataClear(&new_webp_data);
+        std::cerr << std::endl;
+      }
     }
   }
 
@@ -243,7 +240,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     return kByteBudgetError;
   }
 
-  std::cerr << std::endl << "Final PSNR: " << final_psnr << std::endl;
+  std::cout << std::endl << "Final PSNR: " << final_psnr << std::endl;
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
