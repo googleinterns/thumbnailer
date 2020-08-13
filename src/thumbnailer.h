@@ -15,6 +15,7 @@
 #ifndef THUMBNAILER_SRC_CLASS_H_
 #define THUMBNAILER_SRC_CLASS_H_
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,6 +61,15 @@ class Thumbnailer {
   // expected to be initialized (otherwise WebPDataClear() might free some
   // random memory somewhere because the pointer is undefined).
   Status GenerateAnimation(WebPData* const webp_data);
+
+  // Returns the PSNR value of a re-encoded WebPPicture at given quality.
+  // Returns -1 on errors.
+  int GetPSNR(WebPPicture* const pic, int quality);
+
+  // Generates the animation so that all frames have similar PSNR (all) values.
+  Status GenerateAnimationEqualPSNR(WebPData* const webp_data);
+
+  Status SetLoopCount(WebPData* const webp_data);
 
  private:
   struct FrameData {
