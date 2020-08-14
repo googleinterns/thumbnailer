@@ -43,11 +43,10 @@ int main(int argc, char* argv[]) {
   std::ifstream input_list(argv[1]);
   std::string filename_str;
   int timestamp_ms;
-  WebPPicture* current_frame;
 
   while (input_list >> filename_str >> timestamp_ms) {
     pics.emplace_back(new WebPPicture, WebPPictureFree);
-    current_frame = pics.back().get();
+    WebPPicture* current_frame = pics.back().get();
     WebPPictureInit(current_frame);
     current_frame->use_argb = 1;
     ReadImage(filename_str.c_str(), current_frame);
@@ -66,7 +65,6 @@ int main(int argc, char* argv[]) {
   }
 
   ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
-  WebPPictureFree(current_frame);
   WebPDataClear(&webp_data);
 
   google::protobuf::ShutdownProtobufLibrary();

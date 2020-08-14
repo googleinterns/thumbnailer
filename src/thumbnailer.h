@@ -73,6 +73,9 @@ class Thumbnailer {
 
   Status SetLoopCount(WebPData* const webp_data);
 
+  // List of final quality for each frames.
+  std::vector<int> final_qualities;
+
  private:
   struct FrameData {
     WebPPicture pic;

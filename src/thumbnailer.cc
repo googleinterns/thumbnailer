@@ -123,6 +123,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   for (auto& frame : frames_) {
     frame.config.quality = final_quality;
   }
+  final_qualities.vector::assign(frames_.size(), final_quality);
 
   return (final_quality == -1) ? kByteBudgetError : kOk;
 }
@@ -220,7 +221,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       frame.config.quality = frame_final_quality;
 
       WebPPicture new_pic;
-      WebPPictureInit(&new_pic);
       if (!WebPPictureCopy(&frame.pic, &new_pic)) {
         WebPPictureFree(&new_pic);
         return kMemoryError;
@@ -242,6 +242,10 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     }
 
     if (all_frames_iterated) {
+      int current_possition = 0;
+      for (auto& frame : frames_) {
+        final_qualities[current_possition++] = frame.config.quality;
+      }
       WebPData new_webp_data;
       WebPDataInit(&new_webp_data);
       if (!WebPAnimEncoderAssemble(enc_, &new_webp_data)) {
