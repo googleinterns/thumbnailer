@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
   while (input_list >> filename_str >> timestamp_ms) {
     pics.emplace_back(new WebPPicture, WebPPictureFree);
     WebPPictureInit(pics.back().get());
-
+    pics.back().get()->use_argb = 1;
     ReadImage(filename_str.c_str(), pics.back().get());
     thumbnailer.AddFrame(*pics.back().get(), timestamp_ms);
   }

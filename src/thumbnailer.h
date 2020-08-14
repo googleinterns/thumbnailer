@@ -64,7 +64,7 @@ class Thumbnailer {
 
   // Returns the PSNR value of a re-encoded WebPPicture at given quality.
   // Returns -1 on errors.
-  int GetPSNR(WebPPicture* const pic, int quality);
+  int GetPSNR(WebPPicture* const pic, WebPConfig config);
 
   // Generates the animation so that all frames have similar PSNR (all) values.
   Status GenerateAnimationEqualPSNR(WebPData* const webp_data);
@@ -75,11 +75,11 @@ class Thumbnailer {
   struct FrameData {
     WebPPicture pic;
     int timestamp_ms;
+    WebPConfig config;
   };
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;
   WebPAnimEncoderOptions anim_config_;
-  WebPConfig config_;
   int loop_count_;
   int byte_budget_;
   int minimum_lossy_quality_;
