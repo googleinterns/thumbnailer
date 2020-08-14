@@ -59,8 +59,9 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
 
   // Fill the animation.
   for (auto& frame : frames_) {
+    // Copy the 'frame.pic' to a new WebPPicture object and remain the original
+    // 'frame.pic' for later comparison.
     WebPPicture new_pic;
-    WebPPictureInit(&new_pic);
     if (!WebPPictureCopy(&frame.pic, &new_pic) ||
         !WebPAnimEncoderAdd(enc_, &new_pic, frame.timestamp_ms,
                             &frame.config)) {
@@ -126,26 +127,24 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   return (final_quality == -1) ? kByteBudgetError : kOk;
 }
 
-int Thumbnailer::GetPSNR(WebPPicture* const pic, WebPConfig config) {
+int Thumbnailer::GetPSNR(WebPPicture* const pic, const WebPConfig& config) {
   const int failure = -1;
-
   WebPPicture new_pic;
-  WebPPictureInit(&new_pic);
-  if (!WebPPictureCopy(pic, &new_pic)) {
-    WebPPictureFree(&new_pic);
-    return failure;
-  }
 
-  if (!WebPEncode(&config, &new_pic)) {
+  if (!WebPPictureCopy(pic, &new_pic) || (!WebPEncode(&config, &new_pic))) {
     WebPPictureFree(&new_pic);
     return failure;
   }
 
   float distortion_result[5];
-  WebPPictureDistortion(pic, &new_pic, 0, distortion_result);
-  int result_psnr = std::floor(distortion_result[4]);  // PSNR-all.
-  WebPPictureFree(&new_pic);
+  int result_psnr;
+  if (!WebPPictureDistortion(pic, &new_pic, 0, distortion_result)) {
+    result_psnr = failure;
+  } else {
+    result_psnr = std::floor(distortion_result[4]);  // PSNR-all.
+  }
 
+  WebPPictureFree(&new_pic);
   return result_psnr;
 }
 
@@ -241,6 +240,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     if (!WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL)) {
       return kMemoryError;
     }
+
     if (all_frames_iterated) {
       WebPData new_webp_data;
       WebPDataInit(&new_webp_data);
@@ -257,10 +257,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
         std::cerr << std::endl;
       }
     }
-  }
-
-  if (final_psnr == -1) {
-    return kByteBudgetError;
   }
 
   std::cout << std::endl << "Final PSNR: " << final_psnr << std::endl;
