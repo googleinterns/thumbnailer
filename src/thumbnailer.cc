@@ -217,9 +217,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
           frame_max_quality = frame_mid_quality - 1;
         }
       }
-      for (auto& frame : frames_) {
-        frame.config.quality = frame_final_quality;
-      }
+
+      frame.config.quality = frame_final_quality;
 
       WebPPicture new_pic;
       WebPPictureInit(&new_pic);
@@ -235,7 +234,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
       WebPPictureFree(&new_pic);
 
-      std::cerr << frames_[0].config.quality << ' ';
+      std::cerr << frame.config.quality << ' ';
     }
 
     // Add last frame.
