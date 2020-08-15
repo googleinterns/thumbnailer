@@ -39,12 +39,13 @@ Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc_); }
 Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
                                           int timestamp_ms) {
   // Verify dimension of frames.
-  if (!frames_.empty() && (pic.width != (frames_[0].pic).width ||
-                           pic.height != (frames_[0].pic).height)) {
+  if (!frames_.empty() && (pic.width != frames_[0].pic.width ||
+                           pic.height != frames_[0].pic.height)) {
     return kImageFormatError;
   }
   WebPConfig new_config;
   WebPConfigInit(&new_config);
+  new_config.show_compressed = 1;
   frames_.push_back({pic, timestamp_ms, new_config});
   return kOk;
 }
@@ -125,6 +126,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
   }
   final_qualities.vector::assign(frames_.size(), final_quality);
 
+  std::cout << "Final quality: " << final_quality << std::endl;
+
   return (final_quality == -1) ? kByteBudgetError : kOk;
 }
 
@@ -144,7 +147,6 @@ int Thumbnailer::GetPSNR(WebPPicture* const pic, const WebPConfig& config) {
   } else {
     result_psnr = std::floor(distortion_result[4]);  // PSNR-all.
   }
-
   WebPPictureFree(&new_pic);
   return result_psnr;
 }
@@ -192,7 +194,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       const int frame_lowest_psnr = GetPSNR(&frame.pic, frame.config);
       frame.config.quality = 100;
       const int frame_highest_psnr = GetPSNR(&frame.pic, frame.config);
-
       if (frame_lowest_psnr == -1 || frame_highest_psnr == -1) {
         return kMemoryError;
       }
