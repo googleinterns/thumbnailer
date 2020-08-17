@@ -353,7 +353,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
           float new_psnr = GetPSNR(&frame.pic, frame.config);
           if (new_psnr > curr_psnr) {
             final_near_ll = mid_near_ll;
-            results_[curr_index].size = new_size;
+            results_[curr_index] = {new_size, int(frame.config.quality)};
             anim_size = anim_size - curr_size + new_size;
             curr_size = new_size;
             curr_psnr = new_psnr;
