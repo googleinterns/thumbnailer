@@ -25,6 +25,8 @@ static bool ReadImage(const char filename[], WebPPicture* const pic) {
   size_t data_size = 0;
   if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
 
+  pic->use_argb = 1;  // force ARGB.
+
   WebPImageReader reader = WebPGuessImageReader(data, data_size);
   bool ok = reader(data, data_size, pic, 1, NULL);
   free((void*)data);
@@ -48,7 +50,7 @@ int main(int argc, char* argv[]) {
     pics.emplace_back(new WebPPicture, WebPPictureFree);
     WebPPicture* current_frame = pics.back().get();
     WebPPictureInit(current_frame);
-    current_frame->use_argb = 1;
+
     ReadImage(filename_str.c_str(), current_frame);
     thumbnailer.AddFrame(*current_frame, timestamp_ms);
   }
@@ -58,10 +60,25 @@ int main(int argc, char* argv[]) {
   WebPData webp_data;
   WebPDataInit(&webp_data);
 
-  if (argc >= 4 && !strcmp(argv[3], "psnr")) {
+  bool try_equal_psnr = false;
+  bool try_near_lossless = false;
+
+  for (int c = 3; c < argc; c++) {
+    if (!strcmp(argv[c], "psnr")) {
+      try_equal_psnr = true;
+    } else if (!strcmp(argv[c], "try_near_lossless")) {
+      try_near_lossless = true;
+    }
+  }
+
+  if (try_equal_psnr) {
     thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
   } else {
     thumbnailer.GenerateAnimation(&webp_data);
+  }
+
+  if (try_near_lossless) {
+    thumbnailer.TryNearLossless(&webp_data);
   }
 
   ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
