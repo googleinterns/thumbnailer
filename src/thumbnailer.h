@@ -76,24 +76,21 @@ class Thumbnailer {
   // result.
   Status GenerateAnimationEqualPSNR(WebPData* const webp_data);
 
-  // Tries near-lossless to encode each frame. In case of failure, keeps the
-  // latest lossy encoded frame.
+  // Tries near-lossless to encode each frame. Either GenerateAnimation() or
+  // GenerateAnimationEqualPSNR() must be called before to generate animation
+  // with lossy encoding. In case of failure, keeps the latest lossy encoded
+  // frame.
   Status TryNearLossless(WebPData* const webp_data);
 
   Status SetLoopCount(WebPData* const webp_data);
-
-  struct FrameResult {
-    int size;
-    int quality;
-  };
-  // Vector of frames's final results.
-  std::vector<FrameResult> results_;
 
  private:
   struct FrameData {
     WebPPicture pic;
     int timestamp_ms;
     WebPConfig config;
+    int encoded_size;
+    int final_quality;
   };
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;

@@ -63,13 +63,11 @@ int main(int argc, char* argv[]) {
   bool try_equal_psnr = false;
   bool try_near_lossless = false;
 
-  if (argc >= 4) {
-    for (int c = 3; c < argc; c++) {
-      if (!strcmp(argv[c], "psnr")) {
-        try_equal_psnr = true;
-      } else if (!strcmp(argv[c], "try_near_lossless")) {
-        try_near_lossless = true;
-      }
+  for (int c = 3; c < argc; c++) {
+    if (!strcmp(argv[c], "psnr")) {
+      try_equal_psnr = true;
+    } else if (!strcmp(argv[c], "try_near_lossless")) {
+      try_near_lossless = true;
     }
   }
 
