@@ -44,17 +44,16 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
     return kImageFormatError;
   }
   WebPConfig new_config;
-  WebPConfigInit(&new_config);
+  assert(WebPConfigInit(&new_config));
   new_config.show_compressed = 1;
   frames_.push_back({pic, timestamp_ms, new_config});
   return kOk;
 }
 
 int Thumbnailer::GetSize(WebPPicture* const pic, const WebPConfig& config) {
-  const int failure = -1;
+  int failure = -1;
 
   WebPPicture new_pic;
-  WebPPictureInit(&new_pic);
   if (!WebPPictureCopy(pic, &new_pic)) {
     WebPPictureFree(&new_pic);
     return failure;
@@ -67,14 +66,14 @@ int Thumbnailer::GetSize(WebPPicture* const pic, const WebPConfig& config) {
     return failure;
   }
 
-  int frame_size = new_pic.stats->coded_size;
+  const int frame_size = new_pic.stats->coded_size;
   WebPPictureFree(&new_pic);
 
   return frame_size;
 }
 
 float Thumbnailer::GetPSNR(WebPPicture* const pic, const WebPConfig& config) {
-  const int failure = -1;
+  int failure = -1;
   WebPPicture new_pic;
 
   if (!WebPPictureCopy(pic, &new_pic) || (!WebPEncode(&config, &new_pic))) {
@@ -83,7 +82,7 @@ float Thumbnailer::GetPSNR(WebPPicture* const pic, const WebPConfig& config) {
   }
 
   float distortion_result[5];
-  int result_psnr;
+  float result_psnr;
   if (!WebPPictureDistortion(pic, &new_pic, 0, distortion_result)) {
     result_psnr = failure;
   } else {
@@ -386,7 +385,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
     curr_index++;
   }
 
-  std::cout << std::endl;
+  std::cerr << std::endl;
 
   // Add last frame.
   if (!WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL)) {

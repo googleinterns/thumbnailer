@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
 #include <utility>
 #include <vector>
