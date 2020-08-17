@@ -75,19 +75,6 @@ class WebPTestGenerator {
     return pics;
   }
 
-  libwebp::Thumbnailer::Status InitializeThumbnailer(
-      libwebp::Thumbnailer* const thumbnailer) {
-    auto pics = GeneratePics();
-    for (int i = 0; i < pic_count_; ++i) {
-      libwebp::Thumbnailer::Status verdict =
-          thumbnailer->AddFrame(*pics[i], i * 500);
-      if (verdict != libwebp::Thumbnailer::kOk) {
-        return verdict;
-      }
-    }
-    return libwebp::Thumbnailer::kOk;
-  }
-
  private:
   int pic_count_;
   int width_;
@@ -117,12 +104,13 @@ class WebPTestGenerator {
 };
 
 class GenerateAnimationTest
-    : public ::testing::TestWithParam<std::tuple<int, uint8_t, bool>> {};
+    : public ::testing::TestWithParam<std::tuple<int, uint8_t, bool, bool>> {};
 
-TEST_P(GenerateAnimationTest, TestGenerateAnimation) {
+TEST_P(GenerateAnimationTest, IsGenerated) {
   const int pic_count = std::get<0>(GetParam());
   const uint8_t transparency = std::get<1>(GetParam());
   const bool use_randomized = std::get<2>(GetParam());
+  const bool equal_psnr = std::get<3>(GetParam());
 
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
   auto pics =
@@ -135,17 +123,22 @@ TEST_P(GenerateAnimationTest, TestGenerateAnimation) {
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
 
-  ASSERT_EQ(thumbnailer.GenerateAnimation(webp_data.get()),
-            libwebp::Thumbnailer::kOk);
+  if (equal_psnr) {
+    ASSERT_EQ(thumbnailer.GenerateAnimationEqualPSNR(webp_data.get()),
+              libwebp::Thumbnailer::kOk);
+  } else {
+    ASSERT_EQ(thumbnailer.GenerateAnimation(webp_data.get()),
+              libwebp::Thumbnailer::kOk);
+  }
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
 
 INSTANTIATE_TEST_CASE_P(ThumbnailerTest, GenerateAnimationTest,
-                        ::testing::Values(std::make_tuple(10, 0xff, false),
-                                          std::make_tuple(10, 0xaf, false),
-                                          std::make_tuple(10, 0xff, true),
-                                          std::make_tuple(10, 0xaf, true)));
+                        ::testing::Combine(::testing::Values(10),
+                                           ::testing::Values(0xff, 0xaf),
+                                           ::testing::Values(false, true),
+                                           ::testing::Values(false, true)));
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
