@@ -314,6 +314,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 }
 
 Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
+  // The webp_data->size is not used here instead since it is higher than the
+  // sum of encoded-frame sizes.
   int anim_size = 0;
   for (auto& frame : frames_) {
     anim_size += frame.encoded_size;
