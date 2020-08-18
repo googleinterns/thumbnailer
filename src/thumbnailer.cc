@@ -314,7 +314,10 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 }
 
 Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
-  int anim_size = webp_data->size;
+  int anim_size = 0;
+  for (auto& frame : frames_) {
+    anim_size += frame.encoded_size;
+  }
 
   WebPAnimEncoderDelete(enc_);
   enc_ = WebPAnimEncoderNew(frames_[0].pic.width, frames_[0].pic.height,
