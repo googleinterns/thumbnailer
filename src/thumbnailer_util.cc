@@ -14,8 +14,6 @@
 
 #include "thumbnailer_util.h"
 
-#include <iomanip>
-
 namespace libwebp {
 
 ThumbnailerUtil::Status ThumbnailerUtil::AnimData2Pictures(
@@ -30,7 +28,7 @@ ThumbnailerUtil::Status ThumbnailerUtil::AnimData2Pictures(
   WebPAnimInfo anim_info;
   if (!WebPAnimDecoderGetInfo(dec.get(), &anim_info)) {
     std::cerr << "Error getting global info about the animation";
-    return kMemoryError;
+    return kGenericError;
   }
 
   const int width = anim_info.canvas_width;
@@ -58,99 +56,125 @@ ThumbnailerUtil::Status ThumbnailerUtil::AnimData2Pictures(
 
 ThumbnailerUtil::Status ThumbnailerUtil::AnimData2PSNR(
     const std::vector<EnclosedWebPPicture>& original_pics,
-    WebPData* const webp_data, std::vector<float>* const psnr) {
+    WebPData* const webp_data, ThumbnailStatPSNR* const stats) {
+  if (stats == NULL) return kMemoryError;
+
   std::vector<EnclosedWebPPicture> pics;
-  if (AnimData2Pictures(webp_data, &pics) != kOk) return kMemoryError;
+  const Status data2pics_error = AnimData2Pictures(webp_data, &pics);
+  if (data2pics_error != kOk) return data2pics_error;
+
   if (pics.size() != original_pics.size()) {
-    std::cerr << "Frame count mismatched.";
-    return kMemoryError;
+    std::cerr << "Picture count mismatched.";
+    return kGenericError;
   }
 
-  const int frame_count = original_pics.size();
+  const int pic_count = original_pics.size();
 
-  for (int i = 0; i < frame_count; ++i) {
+  for (int i = 0; i < pic_count; ++i) {
     const EnclosedWebPPicture& orig_pic = original_pics[i];
-    const auto& pic = pics[i];
+    const EnclosedWebPPicture& pic = pics[i];
     float distortion_result[5];
     if (!WebPPictureDistortion(orig_pic.get(), pic.get(), 0,
                                distortion_result)) {
       break;
     } else {
-      psnr->push_back(distortion_result[4]);  // PSNR-all.
+      stats->psnr.push_back(distortion_result[4]);  // PSNR-all.
     }
   }
 
-  // Not all frames are processed.
-  if (psnr->size() != frame_count) return kMemoryError;
+  // Not all frames are processed, as WebPPictureDistortion failed.
+  if (stats->psnr.size() != pic_count) return kMemoryError;
 
-  // Print statistics.
-  std::vector<float> new_psnr(*psnr);
+  // Record statistics.
+  std::vector<float> new_psnr(stats->psnr);
   std::sort(new_psnr.begin(), new_psnr.end());
-  std::cerr << std::setw(14) << std::left << "Min PSNR: " << new_psnr.front()
-            << '\n';
-  std::cerr << std::setw(14) << std::left << "Max PSNR: " << new_psnr.back()
-            << '\n';
-  std::cerr << std::setw(14) << std::left << "Mean PSNR: "
-            << std::accumulate(new_psnr.begin(), new_psnr.end(), 0.0) /
-                   frame_count
-            << '\n';
-  std::cerr << std::setw(14) << std::left
-            << "Median PSNR: " << new_psnr[frame_count / 2] << '\n';
-  std::cerr << '\n';
+  stats->min_psnr = new_psnr.front();
+  stats->max_psnr = new_psnr.back();
+  stats->mean_psnr =
+      std::accumulate(new_psnr.begin(), new_psnr.end(), 0.0) / pic_count;
+  stats->median_psnr = new_psnr[pic_count / 2];
+
   return kOk;
 }
 
 ThumbnailerUtil::Status ThumbnailerUtil::CompareThumbnail(
     const std::vector<EnclosedWebPPicture>& original_pics,
-    WebPData* const webp_data_ref, WebPData* const webp_data) {
+    WebPData* const webp_data_1, WebPData* const webp_data_2,
+    ThumbnailDiffPSNR* const diff) {
   if (original_pics.empty()) {
     std::cerr << "Thumbnail doesn't contain any frames.";
     return kOk;
   }
-  std::vector<float> psnr_ref, psnr, psnr_diff;
-  if (AnimData2PSNR(original_pics, webp_data_ref, &psnr_ref) != kOk) {
-    return kMemoryError;
-  }
-  if (AnimData2PSNR(original_pics, webp_data, &psnr) != kOk) {
-    return kMemoryError;
-  }
-  if (psnr_ref.size() != psnr.size()) return kMemoryError;
+  if (diff == NULL) return kMemoryError;
 
-  const int frame_count = original_pics.size();
+  ThumbnailStatPSNR stats_1, stats_2;
+  Status error;
+  error = AnimData2PSNR(original_pics, webp_data_1, &stats_1);
+  if (error != kOk) return error;
+  error = AnimData2PSNR(original_pics, webp_data_2, &stats_2);
+  if (error != kOk) return error;
 
-  for (int i = 0; i < frame_count; ++i) {
-    psnr_diff.push_back(psnr[i] - psnr_ref[i]);
+  // Both thumbnails now contains the same number of WebPPicture(s)
+  // as original_pics.
+  const int pic_count = original_pics.size();
+
+  for (int i = 0; i < pic_count; ++i) {
+    diff->psnr_diff.push_back(stats_2.psnr[i] - stats_1.psnr[i]);
   }
 
-  // Print statistics.
+  // Record statistics.
+  std::vector<float> psnr_diff(diff->psnr_diff);
   std::sort(psnr_diff.begin(), psnr_diff.end());
-  const float max_psnr_decrease = psnr_diff.front();
-  const float max_psnr_increase = psnr_diff.back();
-  const float sum_psnr_changes =
+  diff->max_psnr_decrease = psnr_diff.front();
+  diff->max_psnr_increase = psnr_diff.back();
+  diff->sum_psnr_diff =
       std::accumulate(psnr_diff.begin(), psnr_diff.end(), 0.0);
+  diff->mean_psnr_diff = diff->sum_psnr_diff / pic_count;
+  diff->median_psnr_diff = psnr_diff[pic_count / 2];
 
-  std::cerr << "Frame count: " << frame_count << '\n';
+  return kOk;
+}
 
-  if (max_psnr_increase < 0) {
-    std::cerr << "All frames worsened in PSNR.\n";
-  } else {
-    std::cerr << std::setw(22) << std::left
-              << "Max PSNR increase: " << max_psnr_increase << '\n';
-  }
-  if (max_psnr_decrease > 0) {
+void ThumbnailerUtil::PrintThumbnailStatPSNR(
+    const ThumbnailerUtil::ThumbnailStatPSNR& stats) {
+  if (stats.psnr.empty()) return;
+  std::cerr << "Frame count: " << stats.psnr.size() << '\n';
+  std::cerr << std::setw(14) << std::left << "Min PSNR: " << stats.min_psnr
+            << '\n';
+  std::cerr << std::setw(14) << std::left << "Max PSNR: " << stats.max_psnr
+            << '\n';
+  std::cerr << std::setw(14) << std::left << "Mean PSNR: " << stats.mean_psnr
+            << '\n';
+  std::cerr << std::setw(14) << std::left
+            << "Median PSNR: " << stats.median_psnr << '\n';
+  std::cerr << '\n';
+}
+
+void ThumbnailerUtil::PrintThumbnailDiffPSNR(
+    const ThumbnailerUtil::ThumbnailDiffPSNR& diff) {
+  if (diff.psnr_diff.empty()) return;
+  std::cerr << "Frame count: " << diff.psnr_diff.size() << '\n';
+
+  if (diff.max_psnr_decrease > 0) {
     std::cerr << "All frames improved in PSNR.\n";
   } else {
     std::cerr << std::setw(22) << std::left
-              << "Max PSNR decrease: " << max_psnr_decrease << '\n';
+              << "Max PSNR decrease: " << diff.max_psnr_decrease << '\n';
   }
-  std::cerr << std::setw(22) << std::left
-            << "Sum of PSNR changes: " << sum_psnr_changes << '\n';
-  std::cerr << std::setw(22) << std::left
-            << "Mean PSNR change: " << sum_psnr_changes / frame_count << '\n';
-  std::cerr << std::setw(22) << std::left
-            << "Median PSNR change: " << psnr_diff[frame_count / 2] << '\n';
 
-  return kOk;
+  if (diff.max_psnr_increase < 0) {
+    std::cerr << "All frames worsened in PSNR.\n";
+  } else {
+    std::cerr << std::setw(22) << std::left
+              << "Max PSNR increase: " << diff.max_psnr_increase << '\n';
+  }
+
+  std::cerr << std::setw(22) << std::left
+            << "Sum of PSNR changes: " << diff.sum_psnr_diff << '\n';
+  std::cerr << std::setw(22) << std::left
+            << "Mean PSNR change: " << diff.mean_psnr_diff << '\n';
+  std::cerr << std::setw(22) << std::left
+            << "Median PSNR change: " << diff.median_psnr_diff << '\n';
 }
 
 }  // namespace libwebp

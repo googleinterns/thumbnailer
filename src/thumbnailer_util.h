@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <numeric>
@@ -43,39 +44,45 @@ class ThumbnailerUtil {
   enum Status {
     kOk = 0,       // On success.
     kMemoryError,  // In case of memory error.
-    kGeneralError  // For other errors.
+    kGenericError  // For other errors.
+  };
+
+  // Stores the PSNR values for a thumbnail.
+  struct ThumbnailStatPSNR {
+    std::vector<float> psnr;
+    float min_psnr, max_psnr, mean_psnr, median_psnr;
+  };
+
+  // Stores the differences in PSNR values between two thumbnails,
+  struct ThumbnailDiffPSNR {
+    std::vector<float> psnr_diff;
+    float max_psnr_increase;
+    float max_psnr_decrease;
+    float sum_psnr_diff;
+    float mean_psnr_diff;
+    float median_psnr_diff;
   };
 
   // Converts WebPData (animation) into WebPPictures.
   Status AnimData2Pictures(WebPData* const webp_data,
                            std::vector<EnclosedWebPPicture>* const pics);
 
-  // Takes WebPData having ??? as source, calls AnimData2Pictures, and
-  // returns PSNR values for every WebPPictures with various PSNR stats.
+  // Takes WebPData having original_pics as source, calls AnimData2Pictures.
+  // Records PSNR values for every WebPPictures and various PSNR stats.
   Status AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
                        WebPData* const webp_data,
-                       std::vector<float>* const psnr);
+                       ThumbnailStatPSNR* const stats);
 
   // Takes two thumbnails as WebPData and original frames as WebPPicture(s).
-  // Prints various statistics regarding the differences in PSNR
-  // between two thumbnails.
+  // Records the differences in PSNR between two thumbnails and various stats.
   Status CompareThumbnail(const std::vector<EnclosedWebPPicture>& original_pics,
                           WebPData* const webp_data_ref,
-                          WebPData* const webp_data);
+                          WebPData* const webp_data,
+                          ThumbnailDiffPSNR* const stats);
 
- private:
-  struct ThumbnailStatPSNR {
-    int frame_count;
-    float min, max, mean, median;
-  };
-  struct ThumbnailDiffPSNR {
-    int frame_count;
-    float max_increase;
-    float max_decrease;
-    float sum_diff;
-    float mean_diff;
-    float median_diff;
-  };
+  void PrintThumbnailStatPSNR(const ThumbnailStatPSNR& stats);
+
+  void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& stats);
 };
 
 }  // namespace libwebp
