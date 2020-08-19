@@ -15,22 +15,20 @@
 #ifndef THUMBNAILER_SRC_CLASS_H_
 #define THUMBNAILER_SRC_CLASS_H_
 
-#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <algorithm>
+#include <cassert>
 #include <memory>
-#include <numeric>
 #include <utility>
 #include <vector>
 
 #include "../imageio/image_dec.h"
 #include "../imageio/imageio_util.h"
 #include "thumbnailer.pb.h"
-#include "webp/demux.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
 
@@ -86,11 +84,6 @@ class Thumbnailer {
 
   Status SetLoopCount(WebPData* const webp_data);
 
-  // Takes two thumbnails as WebPData. Prints various statistics regarding
-  // the differences in PSNR between two thumbnails.
-  Status CompareThumbnail(WebPData* const webp_data_ref,
-                          WebPData* const webp_data);
-
  private:
   struct FrameData {
     WebPPicture pic;
@@ -105,17 +98,6 @@ class Thumbnailer {
   int loop_count_;
   int byte_budget_;
   int minimum_lossy_quality_;
-
-  // Converts WebPData (animation) into WebPPictures.
-  Status AnimData2Pictures(
-      WebPData* const webp_data,
-      std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>>* const
-          pics);
-
-  // Takes WebPData having frames_ as source, calls AnimData2Pictures,
-  // and returns PSNR values for every WebPPictures.
-  Status AnimData2PSNR(WebPData* const webp_data,
-                       std::vector<float>* const psnr);
 };
 
 }  // namespace libwebp
