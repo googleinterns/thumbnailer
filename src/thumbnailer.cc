@@ -71,6 +71,7 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(const WebPPicture& pic,
 
   float distortion_result[5];
   if (!WebPPictureDistortion(&pic, &new_pic, 0, distortion_result)) {
+    WebPPictureFree(&new_pic);
     return kStatsError;
   } else {
     *pic_PSNR = distortion_result[4];  // PSNR-all.
