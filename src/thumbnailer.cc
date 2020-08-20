@@ -14,8 +14,6 @@
 
 #include "thumbnailer.h"
 
-static const int kFailure = -1;
-
 namespace libwebp {
 
 Thumbnailer::Thumbnailer() {
@@ -52,43 +50,35 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   return kOk;
 }
 
-int Thumbnailer::GetSize(WebPPicture* const pic, const WebPConfig& config) {
+Thumbnailer::Status Thumbnailer::GetPictureStats(const WebPPicture& pic,
+                                                 const WebPConfig& config,
+                                                 int* const pic_size,
+                                                 float* const pic_PSNR) {
   WebPPicture new_pic;
-  if (!WebPPictureCopy(pic, &new_pic)) {
+  if (!WebPPictureCopy(&pic, &new_pic)) {
     WebPPictureFree(&new_pic);
-    return kFailure;
+    return kStatsError;
   }
 
   WebPAuxStats stats;
   new_pic.stats = &stats;
   if (!WebPEncode(&config, &new_pic)) {
     WebPPictureFree(&new_pic);
-    return kFailure;
+    return kStatsError;
   }
 
-  const int frame_size = new_pic.stats->coded_size;
-  WebPPictureFree(&new_pic);
-
-  return frame_size;
-}
-
-float Thumbnailer::GetPSNR(WebPPicture* const pic, const WebPConfig& config) {
-  WebPPicture new_pic;
-
-  if (!WebPPictureCopy(pic, &new_pic) || !WebPEncode(&config, &new_pic)) {
-    WebPPictureFree(&new_pic);
-    return kFailure;
-  }
+  *pic_size = new_pic.stats->coded_size;
 
   float distortion_result[5];
-  float result_psnr;
-  if (!WebPPictureDistortion(pic, &new_pic, 0, distortion_result)) {
-    result_psnr = kFailure;
+  if (!WebPPictureDistortion(&pic, &new_pic, 0, distortion_result)) {
+    return kStatsError;
   } else {
-    result_psnr = distortion_result[4];  // PSNR-all.
+    *pic_PSNR = distortion_result[4];  // PSNR-all.
   }
+
   WebPPictureFree(&new_pic);
-  return result_psnr;
+
+  return kOk;
 }
 
 Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
@@ -182,11 +172,14 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
       WebPDataClear(&new_webp_data);
     }
   }
-
+  int tmp = 0;
   for (auto& frame : frames_) {
     frame.final_quality = final_quality;
     frame.config.quality = final_quality;
-    frame.encoded_size = GetSize(&frame.pic, frame.config);
+    if (GetPictureStats(frame.pic, frame.config, &frame.encoded_size,
+                        &frame.final_psnr) != kOk) {
+      return kStatsError;
+    };
   }
 
   std::cout << "Final quality: " << final_quality << std::endl;
@@ -206,10 +199,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
   // Find PSNR search range.
   for (auto& frame : frames_) {
-    int frame_psnr = std::floor(GetPSNR(&frame.pic, frame.config));
-    if (frame_psnr == -1) {
-      return kMemoryError;
-    }
+    int frame_psnr = std::floor(frame.final_psnr);
     if (high_psnr == -1 || frame_psnr > high_psnr) {
       high_psnr = frame_psnr;
     }
@@ -233,18 +223,23 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       int frame_max_quality = 100;
       int frame_final_quality = -1;
 
+      float frame_lowest_psnr;
+      float frame_highest_psnr;
+      int current_size;
       frame.config.quality = 0;
-      const int frame_lowest_psnr =
-          std::floor(GetPSNR(&frame.pic, frame.config));
+      if (GetPictureStats(frame.pic, frame.config, &current_size,
+                          &frame_lowest_psnr) != kOk) {
+        return kStatsError;
+      }
       frame.config.quality = 100;
-      const int frame_highest_psnr =
-          std::floor(GetPSNR(&frame.pic, frame.config));
-      if (frame_lowest_psnr == -1 || frame_highest_psnr == -1) {
-        return kMemoryError;
+      if (GetPictureStats(frame.pic, frame.config, &current_size,
+                          &frame_highest_psnr) != kOk) {
+        return kStatsError;
       }
 
       // Target PSNR is out of range.
-      if (target_psnr > frame_highest_psnr || target_psnr < frame_lowest_psnr) {
+      if (target_psnr > std::floor(frame_highest_psnr) ||
+          target_psnr < std::floor(frame_lowest_psnr)) {
         all_frames_iterated = false;
         std::cerr << "Target PSNR is out of range." << std::endl;
         break;
@@ -254,9 +249,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       while (frame_min_quality <= frame_max_quality) {
         int frame_mid_quality = (frame_min_quality + frame_max_quality) / 2;
         frame.config.quality = frame_mid_quality;
-        int current_psnr = std::floor(GetPSNR(&frame.pic, frame.config));
-        if (current_psnr == -1) return kMemoryError;
-        if (current_psnr <= target_psnr) {
+        float current_psnr;
+        if (GetPictureStats(frame.pic, frame.config, &current_size,
+                            &current_psnr) != kOk) {
+          return kStatsError;
+        }
+        if (std::floor(current_psnr) <= target_psnr) {
           frame_final_quality = frame_mid_quality;
           frame_min_quality = frame_mid_quality + 1;
         } else {
@@ -295,7 +293,10 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
         *webp_data = new_webp_data;
 
         for (auto& frame : frames_) {
-          frame.encoded_size = GetSize(&frame.pic, frame.config);
+          if (GetPictureStats(frame.pic, frame.config, &frame.encoded_size,
+                              &frame.final_psnr) != kOk) {
+            return kStatsError;
+          }
           frame.final_quality = frame.config.quality;
         }
 
@@ -331,8 +332,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
 
   for (auto& frame : frames_) {
     int curr_size = frame.encoded_size;
-    frame.config.quality = frame.final_quality;
-    float curr_psnr = GetPSNR(&frame.pic, frame.config);
+    float curr_psnr = frame.final_psnr;
 
     int min_near_ll = 0;
     int max_near_ll = 100;
@@ -341,7 +341,11 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
     frame.config.lossless = 1;
     frame.config.near_lossless = 0;
     frame.config.quality = 90;
-    int new_size = GetSize(&frame.pic, frame.config);
+    int new_size;
+    float new_psnr;
+    if (GetPictureStats(frame.pic, frame.config, &new_size, &new_psnr) != kOk) {
+      return kStatsError;
+    }
 
     // Only try binary search if near-lossles encoding with pre-processing = 0
     // is feasible in order to save execution time.
@@ -350,12 +354,15 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
       while (min_near_ll <= max_near_ll) {
         int mid_near_ll = (min_near_ll + max_near_ll) / 2;
         frame.config.near_lossless = mid_near_ll;
-        new_size = GetSize(&frame.pic, frame.config);
+        if (GetPictureStats(frame.pic, frame.config, &new_size, &new_psnr) !=
+            kOk) {
+          return kStatsError;
+        }
         if (anim_size - curr_size + new_size <= byte_budget_) {
-          const float new_psnr = GetPSNR(&frame.pic, frame.config);
           if (new_psnr > curr_psnr) {
             final_near_ll = mid_near_ll;
             frame.encoded_size = new_size;
+            frame.final_psnr = new_psnr;
             frame.final_quality = frame.config.quality;
             anim_size = anim_size - curr_size + new_size;
             curr_size = new_size;
@@ -398,7 +405,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
   if (!WebPAnimEncoderAssemble(enc_, webp_data)) {
     return kMemoryError;
   }
-
+  std::cout << anim_size << " " << webp_data->size << std::endl;
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
 }
