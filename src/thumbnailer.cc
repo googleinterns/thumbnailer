@@ -84,20 +84,22 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(const WebPPicture& pic,
 Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
   std::unique_ptr<WebPMux, void (*)(WebPMux*)> mux(WebPMuxCreate(webp_data, 1),
                                                    WebPMuxDelete);
-  if (mux == nullptr) return kMemoryError;
+  if (mux == nullptr) return kWebPMuxError;
 
   WebPMuxAnimParams new_params;
   if (WebPMuxGetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
-    return kMemoryError;
+    return kWebPMuxError;
   }
 
   new_params.loop_count = loop_count_;
   if (WebPMuxSetAnimationParams(mux.get(), &new_params) != WEBP_MUX_OK) {
-    return kMemoryError;
+    return kWebPMuxError;
   }
 
   WebPDataClear(webp_data);
-  if (WebPMuxAssemble(mux.get(), webp_data) != WEBP_MUX_OK) return kMemoryError;
+  if (WebPMuxAssemble(mux.get(), webp_data) != WEBP_MUX_OK) {
+    return kWebPMuxError;
+  }
 
   return kOk;
 }
@@ -172,7 +174,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
       WebPDataClear(&new_webp_data);
     }
   }
-  int tmp = 0;
+
   for (auto& frame : frames_) {
     frame.final_quality = final_quality;
     frame.config.quality = final_quality;

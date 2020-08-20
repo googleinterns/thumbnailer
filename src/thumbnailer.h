@@ -48,7 +48,8 @@ class Thumbnailer {
     kImageFormatError,  // If frame dimensions are mismatched.
     kByteBudgetError,   // If there is no quality that makes the animation fit
                         // the byte budget.
-    kStatsError         // In case of error while getting frame's size and PSNR.
+    kStatsError,        // In case of error while getting frame's size and PSNR.
+    kWebPMuxError       // In case of errors related to WebPMux object.
   };
 
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
