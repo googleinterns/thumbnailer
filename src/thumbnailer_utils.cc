@@ -60,8 +60,8 @@ UtilsStatus AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
   if (stats == NULL) return kMemoryError;
 
   std::vector<EnclosedWebPPicture> pics;
-  const UtilsStatus data2pics_error = AnimData2Pictures(webp_data, &pics);
-  if (data2pics_error != kOk) return data2pics_error;
+  const UtilsStatus data2pics_status = AnimData2Pictures(webp_data, &pics);
+  if (data2pics_status != kOk) return data2pics_status;
 
   if (pics.size() != original_pics.size()) {
     std::cerr << "Picture count mismatched.";
@@ -109,11 +109,11 @@ UtilsStatus CompareThumbnail(
   if (diff == NULL) return kMemoryError;
 
   ThumbnailStatsPSNR stats_1, stats_2;
-  UtilsStatus error;
-  error = AnimData2PSNR(original_pics, webp_data_1, &stats_1);
-  if (error != kOk) return error;
-  error = AnimData2PSNR(original_pics, webp_data_2, &stats_2);
-  if (error != kOk) return error;
+  UtilsStatus status;
+  status = AnimData2PSNR(original_pics, webp_data_1, &stats_1);
+  if (status != kOk) return status;
+  status = AnimData2PSNR(original_pics, webp_data_2, &stats_2);
+  if (status != kOk) return status;
 
   // Both thumbnails now contains the same number of WebPPicture(s)
   // as original_pics.
@@ -124,14 +124,14 @@ UtilsStatus CompareThumbnail(
   }
 
   // Record statistics.
-  std::vector<float> psnr_diff(diff->psnr_diff);
-  std::sort(psnr_diff.begin(), psnr_diff.end());
-  diff->max_psnr_decrease = psnr_diff.front();
-  diff->max_psnr_increase = psnr_diff.back();
+  std::vector<float> psnr_diff_copy(diff->psnr_diff);
+  std::sort(psnr_diff_copy.begin(), psnr_diff_copy.end());
+  diff->max_psnr_decrease = psnr_diff_copy.front();
+  diff->max_psnr_increase = psnr_diff_copy.back();
   diff->sum_psnr_diff =
-      std::accumulate(psnr_diff.begin(), psnr_diff.end(), 0.0);
+      std::accumulate(psnr_diff_copy.begin(), psnr_diff_copy.end(), 0.0);
   diff->mean_psnr_diff = diff->sum_psnr_diff / pic_count;
-  diff->median_psnr_diff = psnr_diff[pic_count / 2];
+  diff->median_psnr_diff = psnr_diff_copy[pic_count / 2];
 
   return kOk;
 }
@@ -139,6 +139,13 @@ UtilsStatus CompareThumbnail(
 void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
   if (stats.psnr.empty()) return;
   std::cerr << "Frame count: " << stats.psnr.size() << '\n';
+
+  std::cerr << std::fixed << std::showpoint;
+  std::cerr << std::setprecision(3);
+  for (int i = 0; i < stats.psnr.size(); ++i) {
+    std::cerr << stats.psnr[i] << ' ';
+  }
+  std::cerr << '\n';
   std::cerr << std::setw(14) << std::left << "Min PSNR: " << stats.min_psnr
             << '\n';
   std::cerr << std::setw(14) << std::left << "Max PSNR: " << stats.max_psnr
@@ -153,6 +160,13 @@ void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
 void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
   if (diff.psnr_diff.empty()) return;
   std::cerr << "Frame count: " << diff.psnr_diff.size() << '\n';
+
+  std::cerr << std::fixed << std::showpoint;
+  std::cerr << std::setprecision(3);
+  for (int i = 0; i < diff.psnr_diff.size(); ++i) {
+    std::cerr << diff.psnr_diff[i] << ' ';
+  }
+  std::cerr << '\n';
 
   if (diff.max_psnr_decrease > 0) {
     std::cerr << "All frames improved in PSNR.\n";
