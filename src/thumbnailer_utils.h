@@ -57,7 +57,6 @@ struct ThumbnailDiffPSNR {
   std::vector<float> psnr_diff;
   float max_psnr_increase;
   float max_psnr_decrease;
-  float sum_psnr_diff;
   float mean_psnr_diff;
   float median_psnr_diff;
 };
