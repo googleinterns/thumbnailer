@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "thumbnailer_util.h"
+#include "thumbnailer_utils.h"
 
 namespace libwebp {
 
-ThumbnailerUtil::Status ThumbnailerUtil::AnimData2Pictures(
-    WebPData* const webp_data, std::vector<EnclosedWebPPicture>* const pics) {
+UtilsStatus AnimData2Pictures(WebPData* const webp_data,
+                              std::vector<EnclosedWebPPicture>* const pics) {
   std::unique_ptr<WebPAnimDecoder, void (*)(WebPAnimDecoder*)> dec(
       WebPAnimDecoderNew(webp_data, NULL), WebPAnimDecoderDelete);
   if (dec == NULL) {
@@ -54,13 +54,13 @@ ThumbnailerUtil::Status ThumbnailerUtil::AnimData2Pictures(
   return kOk;
 }
 
-ThumbnailerUtil::Status ThumbnailerUtil::AnimData2PSNR(
-    const std::vector<EnclosedWebPPicture>& original_pics,
-    WebPData* const webp_data, ThumbnailStatPSNR* const stats) {
+UtilsStatus AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
+                          WebPData* const webp_data,
+                          ThumbnailStatsPSNR* const stats) {
   if (stats == NULL) return kMemoryError;
 
   std::vector<EnclosedWebPPicture> pics;
-  const Status data2pics_error = AnimData2Pictures(webp_data, &pics);
+  const UtilsStatus data2pics_error = AnimData2Pictures(webp_data, &pics);
   if (data2pics_error != kOk) return data2pics_error;
 
   if (pics.size() != original_pics.size()) {
@@ -97,7 +97,7 @@ ThumbnailerUtil::Status ThumbnailerUtil::AnimData2PSNR(
   return kOk;
 }
 
-ThumbnailerUtil::Status ThumbnailerUtil::CompareThumbnail(
+UtilsStatus CompareThumbnail(
     const std::vector<EnclosedWebPPicture>& original_pics,
     WebPData* const webp_data_1, WebPData* const webp_data_2,
     ThumbnailDiffPSNR* const diff) {
@@ -105,10 +105,11 @@ ThumbnailerUtil::Status ThumbnailerUtil::CompareThumbnail(
     std::cerr << "Thumbnail doesn't contain any frames.";
     return kOk;
   }
+
   if (diff == NULL) return kMemoryError;
 
-  ThumbnailStatPSNR stats_1, stats_2;
-  Status error;
+  ThumbnailStatsPSNR stats_1, stats_2;
+  UtilsStatus error;
   error = AnimData2PSNR(original_pics, webp_data_1, &stats_1);
   if (error != kOk) return error;
   error = AnimData2PSNR(original_pics, webp_data_2, &stats_2);
@@ -135,8 +136,7 @@ ThumbnailerUtil::Status ThumbnailerUtil::CompareThumbnail(
   return kOk;
 }
 
-void ThumbnailerUtil::PrintThumbnailStatPSNR(
-    const ThumbnailerUtil::ThumbnailStatPSNR& stats) {
+void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
   if (stats.psnr.empty()) return;
   std::cerr << "Frame count: " << stats.psnr.size() << '\n';
   std::cerr << std::setw(14) << std::left << "Min PSNR: " << stats.min_psnr
@@ -150,8 +150,7 @@ void ThumbnailerUtil::PrintThumbnailStatPSNR(
   std::cerr << '\n';
 }
 
-void ThumbnailerUtil::PrintThumbnailDiffPSNR(
-    const ThumbnailerUtil::ThumbnailDiffPSNR& diff) {
+void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
   if (diff.psnr_diff.empty()) return;
   std::cerr << "Frame count: " << diff.psnr_diff.size() << '\n';
 
