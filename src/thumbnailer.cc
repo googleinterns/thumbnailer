@@ -407,7 +407,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
   if (!WebPAnimEncoderAssemble(enc_, webp_data)) {
     return kMemoryError;
   }
-  std::cout << anim_size << " " << webp_data->size << std::endl;
+
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
 }

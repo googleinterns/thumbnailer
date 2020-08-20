@@ -49,7 +49,7 @@ class Thumbnailer {
     kByteBudgetError,   // If there is no quality that makes the animation fit
                         // the byte budget.
     kStatsError,        // In case of error while getting frame's size and PSNR.
-    kWebPMuxError       // In case of errors related to WebPMux object.
+    kWebPMuxError       // In case of error related to WebPMux object.
   };
 
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
