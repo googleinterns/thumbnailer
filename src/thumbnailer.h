@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
+#include <queue>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -49,7 +51,8 @@ class Thumbnailer {
     kByteBudgetError,   // If there is no quality that makes the animation fit
                         // the byte budget.
     kStatsError,        // In case of error while getting frame's size and PSNR.
-    kWebPMuxError       // In case of error related to WebPMux object.
+    kWebPMuxError,      // In case of error related to WebPMux object.
+    kSlopeOptimError
   };
 
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
@@ -84,15 +87,28 @@ class Thumbnailer {
 
   Status SetLoopCount(WebPData* const webp_data);
 
+  Status FindMedianSlope(float* const slope);
+
+  Status ComputeSlope(const int& frame_index, const int& min_quality,
+                      const int& max_quality, float* const slope);
+
+  Status LossyEncodeSlopeOptim(WebPData* const webp_data);
+
+  Status LastLossy(WebPData* const Webp_data);
+
+  Status GenerateAnimationSlopeOptim(WebPData* const webp_data);
+
  private:
   struct FrameData {
     WebPPicture pic;
     int timestamp_ms;
     WebPConfig config;
     int encoded_size;
-    int final_quality;
+    int final_quality = -1;
     float final_psnr;
+    bool near_lossless = false;
   };
+
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;
   WebPAnimEncoderOptions anim_config_;

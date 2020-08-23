@@ -182,7 +182,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
     if (GetPictureStats(frame.pic, frame.config, &frame.encoded_size,
                         &frame.final_psnr) != kOk) {
       return kStatsError;
-    };
+    }
   }
 
   std::cout << "Final quality: " << final_quality << std::endl;
@@ -367,6 +367,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
             frame.encoded_size = new_size;
             frame.final_psnr = new_psnr;
             frame.final_quality = frame.config.quality;
+            frame.near_lossless = true;
             anim_size = anim_size - curr_size + new_size;
             curr_size = new_size;
             curr_psnr = new_psnr;
