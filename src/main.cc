@@ -15,7 +15,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <vector>
 
 #include "thumbnailer.h"
 #include "thumbnailer.pb.h"
@@ -75,9 +74,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if (slope_optim) {
-    thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
-  } else {
+  if (!slope_optim) {
     if (try_equal_psnr) {
       thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
     } else {
@@ -87,6 +84,8 @@ int main(int argc, char* argv[]) {
     if (try_near_lossless) {
       thumbnailer.TryNearLossless(&webp_data);
     }
+  } else {
+    thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
   }
 
   ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
