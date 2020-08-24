@@ -199,8 +199,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
   WebPDataInit(&new_webp_data);
 
   // For each frame, find the best quality value that can produce the higher
-  // PSNR than the current one if possible and make the animation fit right
-  // below the byte budget.
+  // PSNR than the current one if possible.
   for (auto& frame : frames_) {
     int min_quality = 0;
     int max_quality = 100;
