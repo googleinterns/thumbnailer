@@ -105,7 +105,7 @@ Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
   CONVERT_WEBP_MUX_ERROR_STATUS(WebPMuxAssemble(mux.get(), webp_data));
 
   return kOk;
-}  // namespace libwebp
+}
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
     WebPData* const webp_data) {
@@ -226,10 +226,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       float frame_highest_psnr;
       int current_size;
       frame.config.quality = 0;
-      if (GetPictureStats(frame.pic, frame.config, &current_size,
-                          &frame_lowest_psnr) != kOk) {
-        return kStatsError;
-      }
+      CHECK_THUMBNAILER_STATUS(GetPictureStats(
+          frame.pic, frame.config, &current_size, &frame_lowest_psnr));
       frame.config.quality = 100;
       CHECK_THUMBNAILER_STATUS(GetPictureStats(
           frame.pic, frame.config, &current_size, &frame_highest_psnr));

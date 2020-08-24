@@ -180,9 +180,6 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
   }
   anim_size = std::max(anim_size, int(webp_data->size));
 
-  WebPData new_webp_data;
-  WebPDataInit(&new_webp_data);
-
   int num_remaining_frames = frames_.size();
 
   // For each frame, find the best quality value that can produce the higher
@@ -228,7 +225,8 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     frame.config.lossless = frame.near_lossless;
   }
 
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  WebPDataClear(webp_data);
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
 
   std::cout << std::endl << "(Final quality, Near-lossless) :" << std::endl;
   for (auto& frame : frames_) {
@@ -237,8 +235,6 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
   }
   std::cout << std::endl;
 
-  WebPDataClear(webp_data);
-  *webp_data = new_webp_data;
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 }  // namespace libwebp
