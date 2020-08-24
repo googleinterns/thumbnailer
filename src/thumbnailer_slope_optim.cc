@@ -16,13 +16,27 @@
 
 namespace libwebp {
 
+Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
+    WebPData* const webp_data) {
+  Thumbnailer::Status anim_status = LossyEncodeSlopeOptim(webp_data);
+  if (anim_status == kOk) {
+    anim_status = TryNearLossless(webp_data);
+  }
+
+  if (anim_status == kOk) {
+    anim_status = LossyEncodeNoSlopeOptim(webp_data);
+  }
+
+  return anim_status;
+}
+
 Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
   std::vector<float> slopes;
 
   for (auto& frame : frames_) {
     frame.config.quality = 100;
-    float psnr_100;  // pic's psnr value with quality=100.
-    int size_100;    // pic'size with quality=100.
+    float psnr_100;  // pic's psnr value with quality = 100.
+    int size_100;    // pic'size with quality = 100.
     if (GetPictureStats(frame.pic, frame.config, &size_100, &psnr_100) != kOk) {
       return kStatsError;
     };
@@ -31,6 +45,9 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
     int max_quality = 100;
     float pic_final_slope;
 
+    // Use binary search to find the leftmost point on the curve so that the
+    // difference in PSNR between this point and the one with quality value 100
+    // is roughly 1.
     while (min_quality <= max_quality) {
       int mid_quality = (min_quality + max_quality) / 2;
       frame.config.quality = mid_quality;
@@ -43,7 +60,7 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
       }
 
       if (psnr_100 - new_psnr <= 1.0) {
-        pic_final_slope = (psnr_100 - new_psnr) / (size_100 - new_size);
+        pic_final_slope = (psnr_100 - new_psnr) / float(size_100 - new_size);
         max_quality = mid_quality - 1;
       } else {
         min_quality = mid_quality + 1;
@@ -59,27 +76,27 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
   return kOk;
 }
 
-Thumbnailer::Status Thumbnailer::ComputeSlope(const int& frame_index,
-                                              const int& min_quality,
-                                              const int& max_quality,
+Thumbnailer::Status Thumbnailer::ComputeSlope(const int& ind,
+                                              const int& low_quality,
+                                              const int& high_quality,
                                               float* const slope) {
-  frames_[frame_index].config.quality = min_quality;
-  int min_size;
-  float min_psnr;
-  if (GetPictureStats(frames_[frame_index].pic, frames_[frame_index].config,
-                      &min_size, &min_psnr) != kOk) {
+  frames_[ind].config.quality = low_quality;
+  int low_size;
+  float low_psnr;
+  if (GetPictureStats(frames_[ind].pic, frames_[ind].config, &low_size,
+                      &low_psnr) != kOk) {
     return kStatsError;
   }
 
-  frames_[frame_index].config.quality = max_quality;
-  int max_size;
-  float max_psnr;
-  if (GetPictureStats(frames_[frame_index].pic, frames_[frame_index].config,
-                      &max_size, &max_psnr) != kOk) {
+  frames_[ind].config.quality = high_quality;
+  int high_size;
+  float high_psnr;
+  if (GetPictureStats(frames_[ind].pic, frames_[ind].config, &high_size,
+                      &high_psnr) != kOk) {
     return kStatsError;
   }
 
-  *slope = (max_psnr - min_psnr) / (max_size - min_size);
+  *slope = (high_psnr - low_psnr) / float(high_size - low_size);
 
   return kOk;
 }
@@ -97,16 +114,20 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
     return kSlopeOptimError;
   }
 
-  std::queue<int> optim_list;
-  for (int i = 0; i < frames_.size(); i++) {
-    optim_list.push(i);
-  }
-
   int min_quality = minimum_lossy_quality_;
   int max_quality = 100;
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
 
+  std::queue<int> optim_list;  // Queue of frames needed to find the quality in
+                               // the next binary search loop.
+  for (int i = 0; i < frames_.size(); i++) {
+    optim_list.push(i);
+  }
+
+  // Use binary search with slope optimization to find quality values that makes
+  // the animation fit the given byte budget. The quality value for each frame
+  // can be different.
   while (min_quality <= max_quality && !optim_list.empty()) {
     int mid_quality = (min_quality + max_quality) / 2;
 
@@ -167,7 +188,8 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
-Thumbnailer::Status Thumbnailer::LastLossy(WebPData* const webp_data) {
+Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
+    WebPData* const webp_data) {
   int anim_size = 0;
   for (auto& frame : frames_) {
     anim_size += frame.encoded_size;
@@ -176,6 +198,9 @@ Thumbnailer::Status Thumbnailer::LastLossy(WebPData* const webp_data) {
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
 
+  // For each frame, find the best quality value that can produce the higher
+  // PSNR than the current one if possible and make the animation fit right
+  // below the byte budget.
   for (auto& frame : frames_) {
     int min_quality = 0;
     int max_quality = 100;
@@ -220,23 +245,10 @@ Thumbnailer::Status Thumbnailer::LastLossy(WebPData* const webp_data) {
   std::cout << std::endl << "(Final quality, Near-lossless) :" << std::endl;
   for (auto& frame : frames_) {
     std::cerr << "(" << frame.final_quality << ", " << frame.near_lossless
-              << ")" << std::endl;
+              << ") ";
   }
+  std::cout << std::endl;
 
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
-}
-
-Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
-    WebPData* const webp_data) {
-  Thumbnailer::Status anim_status = LossyEncodeSlopeOptim(webp_data);
-  if (anim_status == kOk) {
-    anim_status = TryNearLossless(webp_data);
-  }
-
-  if (anim_status == kOk) {
-    anim_status = LastLossy(webp_data);
-  }
-
-  return anim_status;
 }
 }  // namespace libwebp

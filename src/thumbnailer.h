@@ -51,7 +51,8 @@ class Thumbnailer {
                         // the byte budget.
     kStatsError,        // In case of error while getting frame's size and PSNR.
     kWebPMuxError,      // In case of error related to WebPMux object.
-    kSlopeOptimError
+    kSlopeOptimError    // In case of error while using slope optimization to
+                        // generate animation.
   };
 
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
@@ -86,16 +87,34 @@ class Thumbnailer {
 
   Status SetLoopCount(WebPData* const webp_data);
 
+  // Generates the animation with the slope optimization for the RD-curve.
+  // Either lossy and near-lossless compression mode will be used for each
+  // frame.
+  Status GenerateAnimationSlopeOptim(WebPData* const webp_data);
+
+  // Finds the leftmost point on the RD-curve (for lossy encoding) so that the
+  // difference in PSNR between this point and the last one on the curve
+  // (quality = 100) is approximately 1 for all frames. Then computes the slopes
+  // from these points and finds the median one.
   Status FindMedianSlope(float* const slope);
 
-  Status ComputeSlope(const int& frame_index, const int& min_quality,
-                      const int& max_quality, float* const slope);
+  // Computes the slope between two quality values on the RD-curve when using
+  // lossy encoding for the 'ind'-th frame. The result will be stored in
+  // '*slope'.
+  Status ComputeSlope(const int& ind, const int& low_quality,
+                      const int& high_quality, float* const slope);
 
+  // Generates the animation with lossy compression mode and optimizes the
+  // resulting qualities using the median slope in order to save byte_budget for
+  // calling TryNearLossless().
   Status LossyEncodeSlopeOptim(WebPData* const webp_data);
 
-  Status LastLossy(WebPData* const Webp_data);
-
-  Status GenerateAnimationSlopeOptim(WebPData* const webp_data);
+  // Tries to re-encode each frame with the lossy compression mode to find the
+  // better PSNR values if possible. Both LossyEncodeSlopeOptim() and
+  // TryNearLossless() must be respectively called before to generate the
+  // animation using either lossy and near-lossless compression mode for each
+  // frame.
+  Status LossyEncodeNoSlopeOptim(WebPData* const Webp_data);
 
  private:
   struct FrameData {
@@ -107,7 +126,6 @@ class Thumbnailer {
     float final_psnr;
     bool near_lossless = false;
   };
-
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;
   WebPAnimEncoderOptions anim_config_;
