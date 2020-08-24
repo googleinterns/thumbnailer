@@ -149,6 +149,37 @@ INSTANTIATE_TEST_CASE_P(ThumbnailerTest, GenerateAnimationTest,
                                            ::testing::Values(false, true),
                                            ::testing::Values(false, true)));
 
+class SlopeOptimTest
+    : public ::testing::TestWithParam<std::tuple<int, uint8_t, bool>> {};
+
+TEST_P(SlopeOptimTest, IsGenerated) {
+  const int pic_count = std::get<0>(GetParam());
+  const uint8_t transparency = std::get<1>(GetParam());
+  const bool use_randomized = std::get<2>(GetParam());
+
+  libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
+  auto pics =
+      WebPTestGenerator(pic_count, transparency, use_randomized).GeneratePics();
+  for (int i = 0; i < pic_count; ++i) {
+    ASSERT_EQ(thumbnailer.AddFrame(*pics[i], i * 500),
+              libwebp::Thumbnailer::kOk);
+  }
+  std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
+                                                           WebPDataDelete);
+  WebPDataInit(webp_data.get());
+
+  ASSERT_EQ(thumbnailer.GenerateAnimationSlopeOptim(webp_data.get()),
+            libwebp::Thumbnailer::kOk);
+
+  EXPECT_LE(webp_data->size, kDefaultBudget);
+  EXPECT_GT(webp_data->size, 0);
+}
+
+INSTANTIATE_TEST_CASE_P(ThumbnailerTest, SlopeOptimTest,
+                        ::testing::Combine(::testing::Values(10),
+                                           ::testing::Values(0xff, 0xaf),
+                                           ::testing::Values(false, true)));
+
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

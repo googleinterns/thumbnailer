@@ -64,17 +64,24 @@ int main(int argc, char* argv[]) {
   bool try_near_lossless = false;
   bool slope_optim = false;
 
+  // Option-parsing pass.
   for (int c = 3; c < argc; c++) {
     if (!strcmp(argv[c], "psnr")) {
+      // Generate animation so that all frames have the same PSNR.
       try_equal_psnr = true;
     } else if (!strcmp(argv[c], "try_near_lossless")) {
+      // Generate animation allowing near-lossless method.
       try_near_lossless = true;
     } else if (!strcmp(argv[c], "slope_optimization")) {
+      // Generate animation with slop optimization, 'try_equal_psnr' and
+      // 'try_near_lossless' must be false when using this method.
       slope_optim = true;
     }
   }
 
-  if (!slope_optim) {
+  if (slope_optim) {
+    thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
+  } else {
     if (try_equal_psnr) {
       thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
     } else {
@@ -84,8 +91,6 @@ int main(int argc, char* argv[]) {
     if (try_near_lossless) {
       thumbnailer.TryNearLossless(&webp_data);
     }
-  } else {
-    thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
   }
 
   ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
