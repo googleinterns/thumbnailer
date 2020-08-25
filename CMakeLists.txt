@@ -55,10 +55,14 @@ add_library(thumbnailer_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.cc ${PRO
 target_include_directories(thumbnailer_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 
+add_library(thumbnailer_slope_optim_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_slope_optim.cc ${PROTO_SRCS})
+target_include_directories(thumbnailer_slope_optim_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
+target_link_libraries(thumbnailer_slope_optim_lib protobuf::libprotobuf webp)
+
 add_library(thumbnailer_utils_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_utils.cc ${PROTO_SRCS})
 target_link_libraries(thumbnailer_utils_lib protobuf::libprotobuf webp)
 
 add_executable(thumbnailer ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
-target_link_libraries(thumbnailer thumbnailer_lib thumbnailer_utils_lib imagedec)
+target_link_libraries(thumbnailer thumbnailer_lib thumbnailer_utils_lib thumbnailer_slope_optim_lib imagedec)
 
 add_subdirectory(test)
