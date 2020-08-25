@@ -16,8 +16,8 @@
 
 namespace libwebp {
 
-UtilsStatus AnimData2Pictures(WebPData* const webp_data,
-                              std::vector<EnclosedWebPPicture>* const pics) {
+UtilsStatus AnimData2Frames(WebPData* const webp_data,
+                            std::vector<Frame>* const frames) {
   std::unique_ptr<WebPAnimDecoder, void (*)(WebPAnimDecoder*)> dec(
       WebPAnimDecoderNew(webp_data, NULL), WebPAnimDecoderDelete);
   if (dec == NULL) {
@@ -41,8 +41,9 @@ UtilsStatus AnimData2Pictures(WebPData* const webp_data,
       std::cerr << "Error decoding frame." << std::endl;
       return kMemoryError;
     }
-    pics->emplace_back(new WebPPicture, WebPPictureFree);
-    WebPPicture* pic = pics->back().get();
+    frames->push_back(
+        {EnclosedWebPPicture(new WebPPicture, WebPPictureFree), timestamp});
+    WebPPicture* pic = frames->back().pic.get();
     if (!WebPPictureInit(pic)) return kMemoryError;
     pic->use_argb = 1;
     pic->width = width;
@@ -54,37 +55,41 @@ UtilsStatus AnimData2Pictures(WebPData* const webp_data,
   return kOk;
 }
 
-UtilsStatus AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
+UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
                           WebPData* const webp_data,
                           ThumbnailStatsPSNR* const stats) {
   if (stats == nullptr) return kMemoryError;
 
-  std::vector<EnclosedWebPPicture> pics;
-  const UtilsStatus data2pics_status = AnimData2Pictures(webp_data, &pics);
-  if (data2pics_status != kOk) return data2pics_status;
+  std::vector<Frame> new_frames;
+  const UtilsStatus data2frames_status =
+      AnimData2Frames(webp_data, &new_frames);
+  if (data2frames_status != kOk) return data2frames_status;
 
-  if (pics.size() != original_pics.size()) {
-    std::cerr << "Picture count mismatched." << std::endl;
-    std::cerr << pics.size() << ' ' << original_pics.size() << std::endl;
-    return kGenericError;
-  }
+  const int frame_count = original_frames.size();
+  int new_frame_index = 0;
+  for (int i = 0; i < frame_count; ++i) {
+    const Frame& original_frame = original_frames[i];
 
-  const int pic_count = original_pics.size();
+    // Check if the next frame of new_frames matches original_frame,
+    // based on their timestamps. This is because consecutive original frames
+    // having the exact same WebPPicture are merged into one.
+    if (new_frame_index + 1 < new_frames.size() &&
+        new_frames[new_frame_index + 1].timestamp == original_frame.timestamp) {
+      ++new_frame_index;
+    }
+    const Frame& new_frame = new_frames[new_frame_index];
 
-  for (int i = 0; i < pic_count; ++i) {
-    const EnclosedWebPPicture& orig_pic = original_pics[i];
-    const EnclosedWebPPicture& pic = pics[i];
-    float distortion_result[5];
-    if (!WebPPictureDistortion(orig_pic.get(), pic.get(), 0,
-                               distortion_result)) {
+    float distortion_results[5];
+    if (!WebPPictureDistortion(original_frame.pic.get(), new_frame.pic.get(), 0,
+                               distortion_results)) {
       break;
     } else {
-      stats->psnr.push_back(distortion_result[4]);  // PSNR-all.
+      stats->psnr.push_back(distortion_results[4]);  // PSNR-all.
     }
   }
 
   // Not all frames are processed, as WebPPictureDistortion failed.
-  if (stats->psnr.size() != pic_count) return kMemoryError;
+  if (stats->psnr.size() != frame_count) return kGenericError;
 
   // Record statistics.
   std::vector<float> new_psnr(stats->psnr);
@@ -92,17 +97,17 @@ UtilsStatus AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
   stats->min_psnr = new_psnr.front();
   stats->max_psnr = new_psnr.back();
   stats->mean_psnr =
-      std::accumulate(new_psnr.begin(), new_psnr.end(), 0.0) / pic_count;
-  stats->median_psnr = new_psnr[pic_count / 2];
+      std::accumulate(new_psnr.begin(), new_psnr.end(), 0.0) / frame_count;
+  stats->median_psnr = new_psnr[frame_count / 2];
 
   return kOk;
 }
 
-UtilsStatus CompareThumbnail(
-    const std::vector<EnclosedWebPPicture>& original_pics,
-    WebPData* const webp_data_1, WebPData* const webp_data_2,
-    ThumbnailDiffPSNR* const diff) {
-  if (original_pics.empty()) {
+UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
+                             WebPData* const webp_data_1,
+                             WebPData* const webp_data_2,
+                             ThumbnailDiffPSNR* const diff) {
+  if (original_frames.empty()) {
     std::cerr << "Thumbnail doesn't contain any frames." << std::endl;
     return kOk;
   }
@@ -110,16 +115,13 @@ UtilsStatus CompareThumbnail(
 
   ThumbnailStatsPSNR stats_1, stats_2;
   UtilsStatus status;
-  status = AnimData2PSNR(original_pics, webp_data_1, &stats_1);
+  status = AnimData2PSNR(original_frames, webp_data_1, &stats_1);
   if (status != kOk) return status;
-  status = AnimData2PSNR(original_pics, webp_data_2, &stats_2);
+  status = AnimData2PSNR(original_frames, webp_data_2, &stats_2);
   if (status != kOk) return status;
 
-  // Both thumbnails now contains the same number of WebPPicture(s)
-  // as original_pics.
-  const int pic_count = original_pics.size();
-
-  for (int i = 0; i < pic_count; ++i) {
+  const int frame_count = original_frames.size();
+  for (int i = 0; i < frame_count; ++i) {
     diff->psnr_diff.push_back(stats_2.psnr[i] - stats_1.psnr[i]);
   }
 
@@ -130,8 +132,8 @@ UtilsStatus CompareThumbnail(
   diff->max_psnr_increase = psnr_diff_copy.back();
   diff->mean_psnr_diff =
       std::accumulate(psnr_diff_copy.begin(), psnr_diff_copy.end(), 0.0) /
-      pic_count;
-  diff->median_psnr_diff = psnr_diff_copy[pic_count / 2];
+      frame_count;
+  diff->median_psnr_diff = psnr_diff_copy[frame_count / 2];
 
   return kOk;
 }
