@@ -21,13 +21,13 @@ UtilsStatus AnimData2Pictures(WebPData* const webp_data,
   std::unique_ptr<WebPAnimDecoder, void (*)(WebPAnimDecoder*)> dec(
       WebPAnimDecoderNew(webp_data, NULL), WebPAnimDecoderDelete);
   if (dec == NULL) {
-    std::cerr << "Error parsing image.\n";
+    std::cerr << "Error parsing image." << std::endl;
     return kMemoryError;
   }
 
   WebPAnimInfo anim_info;
   if (!WebPAnimDecoderGetInfo(dec.get(), &anim_info)) {
-    std::cerr << "Error getting global info about the animation.\n";
+    std::cerr << "Error getting global info about the animation." << std::endl;
     return kGenericError;
   }
 
@@ -38,7 +38,7 @@ UtilsStatus AnimData2Pictures(WebPData* const webp_data,
     uint8_t* frame_rgba;
     int timestamp;
     if (!WebPAnimDecoderGetNext(dec.get(), &frame_rgba, &timestamp)) {
-      std::cerr << "Error decoding frame.\n";
+      std::cerr << "Error decoding frame." << std::endl;
       return kMemoryError;
     }
     pics->emplace_back(new WebPPicture, WebPPictureFree);
@@ -64,7 +64,8 @@ UtilsStatus AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
   if (data2pics_status != kOk) return data2pics_status;
 
   if (pics.size() != original_pics.size()) {
-    std::cerr << "Picture count mismatched.\n";
+    std::cerr << "Picture count mismatched." << std::endl;
+    std::cerr << pics.size() << ' ' << original_pics.size() << std::endl;
     return kGenericError;
   }
 
@@ -102,10 +103,9 @@ UtilsStatus CompareThumbnail(
     WebPData* const webp_data_1, WebPData* const webp_data_2,
     ThumbnailDiffPSNR* const diff) {
   if (original_pics.empty()) {
-    std::cerr << "Thumbnail doesn't contain any frames.\n";
+    std::cerr << "Thumbnail doesn't contain any frames." << std::endl;
     return kOk;
   }
-
   if (diff == nullptr) return kMemoryError;
 
   ThumbnailStatsPSNR stats_1, stats_2;
@@ -138,55 +138,59 @@ UtilsStatus CompareThumbnail(
 
 void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
   if (stats.psnr.empty()) return;
-  std::cerr << "Frame count: " << stats.psnr.size() << '\n';
+  std::cerr << "Frame count: " << stats.psnr.size() << std::endl;
 
   std::cerr << std::fixed << std::showpoint;
   std::cerr << std::setprecision(3);
+
   for (int i = 0; i < stats.psnr.size(); ++i) {
     std::cerr << stats.psnr[i] << ' ';
   }
-  std::cerr << '\n';
+  std::cerr << std::endl;
+
   std::cerr << std::setw(14) << std::left << "Min PSNR: " << stats.min_psnr
-            << '\n';
+            << std::endl;
   std::cerr << std::setw(14) << std::left << "Max PSNR: " << stats.max_psnr
-            << '\n';
+            << std::endl;
   std::cerr << std::setw(14) << std::left << "Mean PSNR: " << stats.mean_psnr
-            << '\n';
+            << std::endl;
   std::cerr << std::setw(14) << std::left
-            << "Median PSNR: " << stats.median_psnr << '\n';
-  std::cerr << '\n';
+            << "Median PSNR: " << stats.median_psnr << std::endl;
+  std::cerr << std::endl;
 }
 
 void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
   if (diff.psnr_diff.empty()) return;
-  std::cerr << "Frame count: " << diff.psnr_diff.size() << '\n';
+  std::cerr << "Frame count: " << diff.psnr_diff.size() << std::endl;
 
   std::cerr << std::showpos;
   std::cerr << std::fixed << std::showpoint;
   std::cerr << std::setprecision(3);
+
   for (int i = 0; i < diff.psnr_diff.size(); ++i) {
     std::cerr << diff.psnr_diff[i] << ' ';
   }
-  std::cerr << '\n';
+  std::cerr << std::endl;
 
   if (diff.max_psnr_decrease > 0) {
-    std::cerr << "All frames improved in PSNR.\n";
+    std::cerr << "All frames improved in PSNR." << std::endl;
   } else {
     std::cerr << std::setw(21) << std::left
-              << "Max PSNR decrease: " << diff.max_psnr_decrease << '\n';
+              << "Max PSNR decrease: " << diff.max_psnr_decrease << std::endl;
   }
 
   if (diff.max_psnr_increase < 0) {
-    std::cerr << "All frames worsened in PSNR.\n";
+    std::cerr << "All frames worsened in PSNR." << std::endl;
   } else {
     std::cerr << std::setw(21) << std::left
-              << "Max PSNR increase: " << diff.max_psnr_increase << '\n';
+              << "Max PSNR increase: " << diff.max_psnr_increase << std::endl;
   }
 
   std::cerr << std::setw(21) << std::left
-            << "Mean PSNR change: " << diff.mean_psnr_diff << '\n';
+            << "Mean PSNR change: " << diff.mean_psnr_diff << std::endl;
   std::cerr << std::setw(21) << std::left
-            << "Median PSNR change: " << diff.median_psnr_diff << '\n';
+            << "Median PSNR change: " << diff.median_psnr_diff << std::endl;
+  std::cerr << std::noshowpos << std::endl;
 }
 
 }  // namespace libwebp
