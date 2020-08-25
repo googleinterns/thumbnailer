@@ -26,7 +26,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
     CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
     if (curr_anim_size == webp_data->size) break;
     curr_anim_size = webp_data->size;
-  } while (0);
+  } while (true);
 
   return kOk;
 }
@@ -124,7 +124,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
     std::vector<int> new_optim_list;
 
-    for (int& curr_frame : optim_list) {
+    for (int curr_frame : optim_list) {
       float curr_slope;
       CHECK_THUMBNAILER_STATUS(
           ComputeSlope(curr_frame, min_quality, max_quality, &curr_slope));
@@ -140,19 +140,18 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
     CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
 
     if (new_webp_data.size <= byte_budget_) {
-      optim_list.clear();
-      for (int& curr_frame : new_optim_list) {
+      for (int curr_frame : new_optim_list) {
         frames_[curr_frame].final_quality = mid_quality;
-        optim_list.push_back(curr_frame);
       }
       WebPDataClear(webp_data);
       *webp_data = new_webp_data;
       min_quality = mid_quality + 1;
     } else {
-      optim_list = new_optim_list;
       max_quality = mid_quality - 1;
       WebPDataClear(&new_webp_data);
     }
+
+    optim_list = new_optim_list;
   }
 
   std::cout << "Final qualities with slope optimization: ";
@@ -179,13 +178,16 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     anim_size += frame.encoded_size;
   }
   anim_size = std::max(anim_size, int(webp_data->size));
+  // if the `anim_size` exceed the `byte_budget`, keep the webp_data generated
+  // by the previous steps as result and do nothing here.
+  if (anim_size > byte_budget_) return kOk;
 
   int num_remaining_frames = frames_.size();
 
   // For each frame, find the best quality value that can produce the higher
   // PSNR than the current one if possible.
   for (auto& frame : frames_) {
-    int min_quality = 0;
+    int min_quality = 70;
     if (!frame.config.lossless) {
       min_quality = frame.final_quality;
     }
@@ -201,7 +203,8 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
 
       if (new_psnr > frame.final_psnr || ((new_psnr == frame.final_psnr) &&
                                           (new_size <= frame.encoded_size))) {
-        float extra_budget = (byte_budget_ - anim_size) / num_remaining_frames;
+        const float extra_budget =
+            (byte_budget_ - anim_size) / num_remaining_frames;
         if (float(new_size - frame.encoded_size) <= extra_budget) {
           anim_size = anim_size - frame.encoded_size + new_size;
           frame.encoded_size = new_size;

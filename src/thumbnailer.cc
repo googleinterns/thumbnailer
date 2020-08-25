@@ -14,10 +14,10 @@
 
 #include "thumbnailer.h"
 
-#define CONVERT_WEBP_MUX_ERROR_STATUS(webp_mux_error) \
-  do {                                                \
-    const WebPMuxError error = (webp_mux_error);      \
-    if (error != WEBP_MUX_OK) return kWebPMuxError;   \
+#define CONVERT_WEBP_MUX_STATUS(webp_mux_error)     \
+  do {                                              \
+    const WebPMuxError error = (webp_mux_error);    \
+    if (error != WEBP_MUX_OK) return kWebPMuxError; \
   } while (0);
 
 namespace libwebp {
@@ -94,15 +94,13 @@ Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
   if (mux == nullptr) return kWebPMuxError;
 
   WebPMuxAnimParams new_params;
-  CONVERT_WEBP_MUX_ERROR_STATUS(
-      WebPMuxGetAnimationParams(mux.get(), &new_params));
+  CONVERT_WEBP_MUX_STATUS(WebPMuxGetAnimationParams(mux.get(), &new_params));
 
   new_params.loop_count = loop_count_;
-  CONVERT_WEBP_MUX_ERROR_STATUS(
-      WebPMuxSetAnimationParams(mux.get(), &new_params));
+  CONVERT_WEBP_MUX_STATUS(WebPMuxSetAnimationParams(mux.get(), &new_params));
 
   WebPDataClear(webp_data);
-  CONVERT_WEBP_MUX_ERROR_STATUS(WebPMuxAssemble(mux.get(), webp_data));
+  CONVERT_WEBP_MUX_STATUS(WebPMuxAssemble(mux.get(), webp_data));
 
   return kOk;
 }
