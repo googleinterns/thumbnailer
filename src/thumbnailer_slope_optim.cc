@@ -22,11 +22,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   CHECK_THUMBNAILER_STATUS(TryNearLossless(webp_data));
 
   int curr_anim_size = webp_data->size;
-  do {
+  const int KMaxIter = 5;
+  for (int i = 0; i < KMaxIter; ++i) {
     CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
     if (curr_anim_size == webp_data->size) break;
     curr_anim_size = webp_data->size;
-  } while (true);
+  }
 
   return kOk;
 }
