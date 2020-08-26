@@ -73,7 +73,7 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
 
     slopes.push_back(pic_final_slope);
 
-    curr_ind++;
+    ++curr_ind;
   }
 
   std::sort(slopes.begin(), slopes.end());
@@ -118,7 +118,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
   std::vector<int> optim_list;  // Vector of frames needed to find the quality
                                 // in the next binary search loop.
-  for (int i = 0; i < frames_.size(); i++) {
+  for (int i = 0; i < frames_.size(); ++i) {
     optim_list.push_back(i);
   }
 
@@ -228,7 +228,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     }
 
     num_remaining_frames--;
-    curr_ind++;
+    ++curr_ind;
   }
 
   for (auto& frame : frames_) {

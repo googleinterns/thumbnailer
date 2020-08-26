@@ -284,7 +284,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       WebPPictureFree(&new_pic);
 
       std::cerr << frame.config.quality << ' ';
-      curr_ind++;
+      ++curr_ind;
     }
 
     // Add last frame.
@@ -402,7 +402,7 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
       return kMemoryError;
     }
     WebPPictureFree(&new_pic);
-    curr_ind++;
+    ++curr_ind;
   }
 
   std::cerr << std::endl;
