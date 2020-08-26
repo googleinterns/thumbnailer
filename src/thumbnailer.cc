@@ -124,17 +124,20 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
   if (enc_ == nullptr) return kMemoryError;
 
   // Fill the animation.
+  int prev_timestamp = 0;
   for (auto& frame : frames_) {
     // Copy the 'frame.pic' to a new WebPPicture object and remain the original
     // 'frame.pic' for later comparison.
     WebPPicture new_pic;
+
+    // WebPAnimEncoderAdd uses starting timestamp instead of ending timestamps.
     if (!WebPPictureCopy(&frame.pic, &new_pic) ||
-        !WebPAnimEncoderAdd(enc_, &new_pic, frame.timestamp_ms,
-                            &frame.config)) {
+        !WebPAnimEncoderAdd(enc_, &new_pic, prev_timestamp, &frame.config)) {
       WebPPictureFree(&new_pic);
       return kMemoryError;
     }
     WebPPictureFree(&new_pic);
+    prev_timestamp = frame.timestamp_ms;
   }
 
   // Add last frame.
@@ -234,6 +237,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     int curr_ind = 0;
     // For each frame, find the quality value that produces WebPPicture
     // having PSNR close to target_psnr.
+    int prev_timestamp = 0;
     for (auto& frame : frames_) {
       int frame_min_quality = 0;
       int frame_max_quality = 100;
@@ -276,13 +280,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
       WebPPicture new_pic;
       if (!WebPPictureCopy(&frame.pic, &new_pic) ||
-          !WebPAnimEncoderAdd(enc_, &new_pic, frame.timestamp_ms,
-                              &frame.config)) {
+          !WebPAnimEncoderAdd(enc_, &new_pic, prev_timestamp, &frame.config)) {
         WebPPictureFree(&new_pic);
         return kMemoryError;
       }
       WebPPictureFree(&new_pic);
-
+      prev_timestamp = frame.timestamp_ms;
       std::cerr << frame.config.quality << ' ';
       ++curr_ind;
     }

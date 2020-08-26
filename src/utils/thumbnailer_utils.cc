@@ -74,11 +74,9 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
   if (new_frames.size() > original_frames.size()) {
     return kGenericError;
   }
-  const int frame_count = original_frames.size();
-  int new_frame_index = 0;
-  for (int i = 0; i < frame_count; ++i) {
-    const Frame& original_frame = original_frames[i];
 
+  int new_frame_index = 0;
+  for (const Frame& original_frame : original_frames) {
     // Check if the next frame of new_frames matches original_frame,
     // based on their timestamps.
     if (new_frame_index + 1 < new_frames.size() &&
@@ -105,9 +103,9 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
   std::sort(new_psnr.begin(), new_psnr.end());
   stats->min_psnr = new_psnr.front();
   stats->max_psnr = new_psnr.back();
-  stats->mean_psnr =
-      std::accumulate(new_psnr.begin(), new_psnr.end(), 0.0) / frame_count;
-  stats->median_psnr = new_psnr[frame_count / 2];
+  stats->mean_psnr = std::accumulate(new_psnr.begin(), new_psnr.end(), 0.0) /
+                     original_frames.size();
+  stats->median_psnr = new_psnr[original_frames.size() / 2];
 
   return kOk;
 }

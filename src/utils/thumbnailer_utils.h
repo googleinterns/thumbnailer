@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THUMBNAILER_SRC_THUMBNAILER_UTILS_H_
-#define THUMBNAILER_SRC_THUMBNAILER_UTILS_H_
+#ifndef THUMBNAILER_SRC_UTILS_THUMBNAILER_UTILS_H_
+#define THUMBNAILER_SRC_UTILS_THUMBNAILER_UTILS_H_
 
 #include <math.h>
 #include <stdio.h>
@@ -96,4 +96,4 @@ void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff);
 
 }  // namespace libwebp
 
-#endif  // THUMBNAILER_SRC_THUMBNAILER_UTILS_H_
+#endif  // THUMBNAILER_SRC_UTILS_THUMBNAILER_UTILS_H_
