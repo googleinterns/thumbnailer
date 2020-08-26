@@ -130,7 +130,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
     // 'frame.pic' for later comparison.
     WebPPicture new_pic;
 
-    // WebPAnimEncoderAdd uses starting timestamp instead of ending timestamps.
+    // WebPAnimEncoderAdd uses starting timestamps instead of ending timestamps.
     if (!WebPPictureCopy(&frame.pic, &new_pic) ||
         !WebPAnimEncoderAdd(enc_, &new_pic, prev_timestamp, &frame.config)) {
       WebPPictureFree(&new_pic);
