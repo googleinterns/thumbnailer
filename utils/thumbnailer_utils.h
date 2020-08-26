@@ -34,6 +34,12 @@
 #include "webp/encode.h"
 #include "webp/mux.h"
 
+#define CHECK_UTILS_STATUS(status)  \
+  do {                              \
+    const UtilsStatus S = (status); \
+    if (S != kOk) return S;         \
+  } while (0);
+
 typedef std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>
     EnclosedWebPPicture;
 
@@ -47,7 +53,7 @@ enum UtilsStatus {
 
 struct Frame {
   EnclosedWebPPicture pic;
-  int timestamp;
+  int timestamp;  // Ending timestamp in milliseconds.
 };
 
 // Stores the PSNR values for a thumbnail with various statistics.
@@ -76,7 +82,7 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
                           WebPData* const webp_data,
                           ThumbnailStatsPSNR* const stats);
 
-// Takes the original frames and two thumbnails as WebPData.
+// Takes the original frames, and two thumbnails as WebPData.
 // Records the differences in PSNR between two thumbnails and various stats.
 // Differences are with respect to webp_data_1.
 UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,

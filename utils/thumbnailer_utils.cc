@@ -61,35 +61,44 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
   if (stats == nullptr) return kMemoryError;
 
   std::vector<Frame> new_frames;
-  const UtilsStatus data2frames_status =
-      AnimData2Frames(webp_data, &new_frames);
-  if (data2frames_status != kOk) return data2frames_status;
+  CHECK_UTILS_STATUS(AnimData2Frames(webp_data, &new_frames));
 
+  // We assume that new_frames.size() <= original_frames.size(). For some cases,
+  // consecutive frames of original_frames having the exact same WebPPicture are
+  // merged into one in new_frames. Otherwise, no frames are merged; new_frames
+  // and original_frames are equal in size.
+  //
+  // It is unlikely to have new_frames.size() > original_frames.size() for
+  // thumbnails, as discussed:
+  // https://github.com/googleinterns/step255-2020/pull/25#discussion_r476508818
+  if (new_frames.size() > original_frames.size()) {
+    return kGenericError;
+  }
   const int frame_count = original_frames.size();
   int new_frame_index = 0;
   for (int i = 0; i < frame_count; ++i) {
     const Frame& original_frame = original_frames[i];
 
     // Check if the next frame of new_frames matches original_frame,
-    // based on their timestamps. This is because consecutive original frames
-    // having the exact same WebPPicture are merged into one.
+    // based on their timestamps.
     if (new_frame_index + 1 < new_frames.size() &&
         new_frames[new_frame_index + 1].timestamp == original_frame.timestamp) {
       ++new_frame_index;
     }
     const Frame& new_frame = new_frames[new_frame_index];
+    if (new_frame.timestamp < original_frame.timestamp) {
+      std::cerr << "Timestamp mismatched." << std::endl;
+      return kGenericError;
+    }
 
     float distortion_results[5];
     if (!WebPPictureDistortion(original_frame.pic.get(), new_frame.pic.get(), 0,
                                distortion_results)) {
-      break;
+      return kGenericError;
     } else {
       stats->psnr.push_back(distortion_results[4]);  // PSNR-all.
     }
   }
-
-  // Not all frames are processed, as WebPPictureDistortion failed.
-  if (stats->psnr.size() != frame_count) return kGenericError;
 
   // Record statistics.
   std::vector<float> new_psnr(stats->psnr);
@@ -115,10 +124,8 @@ UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
 
   ThumbnailStatsPSNR stats_1, stats_2;
   UtilsStatus status;
-  status = AnimData2PSNR(original_frames, webp_data_1, &stats_1);
-  if (status != kOk) return status;
-  status = AnimData2PSNR(original_frames, webp_data_2, &stats_2);
-  if (status != kOk) return status;
+  CHECK_UTILS_STATUS(AnimData2PSNR(original_frames, webp_data_1, &stats_1));
+  CHECK_UTILS_STATUS(AnimData2PSNR(original_frames, webp_data_2, &stats_2));
 
   const int frame_count = original_frames.size();
   for (int i = 0; i < frame_count; ++i) {
