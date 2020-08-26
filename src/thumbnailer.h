@@ -99,6 +99,10 @@ class Thumbnailer {
     int final_quality = -1;
     float final_psnr;
     bool near_lossless = false;
+    // Array containing pairs of (size, psnr) for qualities in range [0..100]
+    // when using lossy encoding. If WebPEncode() has not been called for
+    // quality 'x', lossy_data['x'] = (-1,-1.0).
+    std::pair<int, float> lossy_data[101];
   };
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;
@@ -107,11 +111,9 @@ class Thumbnailer {
   int byte_budget_;
   int minimum_lossy_quality_;
 
-  // Compute the size (in bytes) and PSNR of a re-encoded WebPPicture at given
-  // config. The resulting size and PSNR will be stored in '*pic_size' and
-  // '*pic_PSNR' respectively.
-  Status GetPictureStats(const WebPPicture& pic, const WebPConfig& config,
-                         int* const pic_size, float* const pic_PSNR);
+  // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
+  // size and PSNR will be stored in '*pic_size' and '*pic_PSNR' respectively.
+  Status GetPictureStats(int ind, int* const pic_size, float* const pic_PSNR);
 
   Status SetLoopCount(WebPData* const webp_data);
 
