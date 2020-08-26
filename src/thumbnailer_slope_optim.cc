@@ -18,6 +18,12 @@ namespace libwebp {
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
     WebPData* const webp_data) {
+  for (auto& frame : frames_) {
+    // Initialize `lossy_data` array.
+    std::fill(frame.lossy_data, frame.lossy_data + 101,
+              std::make_pair(-1, -1.0));
+  }
+
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
   CHECK_THUMBNAILER_STATUS(TryNearLossless(webp_data));
 
@@ -35,12 +41,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
 Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
   std::vector<float> slopes;
 
+  int curr_ind = 0;
   for (auto& frame : frames_) {
     frame.config.quality = 100;
     float psnr_100;  // pic's psnr value with quality = 100.
     int size_100;    // pic'size with quality = 100.
-    CHECK_THUMBNAILER_STATUS(
-        GetPictureStats(frame.pic, frame.config, &size_100, &psnr_100));
+    CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &size_100, &psnr_100));
 
     int min_quality = 0;
     int max_quality = 100;
@@ -55,8 +61,7 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
       float new_psnr;
       int new_size;
 
-      CHECK_THUMBNAILER_STATUS(
-          GetPictureStats(frame.pic, frame.config, &new_size, &new_psnr));
+      CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
 
       if (psnr_100 - new_psnr <= 1.0) {
         pic_final_slope = (psnr_100 - new_psnr) / float(size_100 - new_size);
@@ -67,6 +72,8 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
     }
 
     slopes.push_back(pic_final_slope);
+
+    curr_ind++;
   }
 
   std::sort(slopes.begin(), slopes.end());
@@ -81,14 +88,12 @@ Thumbnailer::Status Thumbnailer::ComputeSlope(int ind, int low_quality,
   frames_[ind].config.quality = low_quality;
   int low_size;
   float low_psnr;
-  CHECK_THUMBNAILER_STATUS(GetPictureStats(
-      frames_[ind].pic, frames_[ind].config, &low_size, &low_psnr));
+  CHECK_THUMBNAILER_STATUS(GetPictureStats(ind, &low_size, &low_psnr));
 
   frames_[ind].config.quality = high_quality;
   int high_size;
   float high_psnr;
-  CHECK_THUMBNAILER_STATUS(GetPictureStats(
-      frames_[ind].pic, frames_[ind].config, &high_size, &high_psnr));
+  CHECK_THUMBNAILER_STATUS(GetPictureStats(ind, &high_size, &high_psnr));
 
   *slope = (high_psnr - low_psnr) / float(high_size - low_size);
 
@@ -157,10 +162,11 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
   std::cout << "Final qualities with slope optimization: ";
 
+  int curr_ind = 0;
   for (auto& frame : frames_) {
     frame.config.quality = frame.final_quality;
-    CHECK_THUMBNAILER_STATUS(GetPictureStats(
-        frame.pic, frame.config, &frame.encoded_size, &frame.final_psnr));
+    CHECK_THUMBNAILER_STATUS(
+        GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
     std::cerr << frame.config.quality << " ";
   }
 
@@ -184,6 +190,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
   if (anim_size > byte_budget_) return kOk;
 
   int num_remaining_frames = frames_.size();
+  int curr_ind = 0;
 
   // For each frame, find the best quality value that can produce the higher
   // PSNR than the current one if possible.
@@ -199,8 +206,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
       int new_size;
       float new_psnr;
       frame.config.quality = mid_quality;
-      CHECK_THUMBNAILER_STATUS(
-          GetPictureStats(frame.pic, frame.config, &new_size, &new_psnr));
+      CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
 
       if (new_psnr > frame.final_psnr || ((new_psnr == frame.final_psnr) &&
                                           (new_size <= frame.encoded_size))) {
@@ -222,6 +228,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     }
 
     num_remaining_frames--;
+    curr_ind++;
   }
 
   for (auto& frame : frames_) {
