@@ -19,7 +19,7 @@ namespace libwebp {
 Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
     WebPData* const webp_data) {
   for (auto& frame : frames_) {
-    // Initialize `lossy_data` array.
+    // Initialize 'lossy_data' array.
     std::fill(frame.lossy_data, frame.lossy_data + 101,
               std::make_pair(-1, -1.0));
   }

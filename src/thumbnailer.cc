@@ -58,11 +58,11 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
 
 Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
                                                  float* const pic_PSNR) {
-  int quality = int(frames_[ind].config.quality);
-  if (!frames_[ind].config.near_lossless &&
+  const int quality = int(frames_[ind].config.quality);
+  if (!frames_[ind].config.lossless &&
       frames_[ind].lossy_data[quality].first != -1) {
-    *pic_size = frames_[ind].lossy_data->first;
-    *pic_PSNR = frames_[ind].lossy_data->second;
+    *pic_size = frames_[ind].lossy_data[quality].first;
+    *pic_PSNR = frames_[ind].lossy_data[quality].second;
     return kOk;
   }
 
@@ -90,6 +90,9 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
     *pic_PSNR = distortion_result[4];  // PSNR-all.
   }
 
+  if (!frames_[ind].config.lossless) {
+    frames_[ind].lossy_data[quality] = std::make_pair(*pic_size, *pic_PSNR);
+  }
   WebPPictureFree(&new_pic);
 
   return kOk;
@@ -155,7 +158,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
             });
 
   for (auto& frame : frames_) {
-    // Initialize `lossy_data` array.
+    // Initialize 'lossy_data' array.
     std::fill(frame.lossy_data, frame.lossy_data + 101,
               std::make_pair(-1, -1.0));
   }

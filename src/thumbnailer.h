@@ -99,7 +99,11 @@ class Thumbnailer {
     int final_quality = -1;
     float final_psnr;
     bool near_lossless = false;
-    std::pair<int, float> lossy_data[101];
+    std::pair<int, float>
+        lossy_data[101];  // Array containing pairs of (size, psnr) for
+                          // qualities in range [0..100] when using lossy
+                          // encoding. If WebPEncode() has not been called for
+                          // quality 'x', lossy_data['x'] = (-1,-1.0).
   };
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;
