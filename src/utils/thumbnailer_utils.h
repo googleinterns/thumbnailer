@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef THUMBNAILER_SRC_THUMBNAILER_UTILS_H_
-#define THUMBNAILER_SRC_THUMBNAILER_UTILS_H_
+#ifndef THUMBNAILER_SRC_UTILS_THUMBNAILER_UTILS_H_
+#define THUMBNAILER_SRC_UTILS_THUMBNAILER_UTILS_H_
 
 #include <math.h>
 #include <stdio.h>
@@ -34,15 +34,26 @@
 #include "webp/encode.h"
 #include "webp/mux.h"
 
+#define CHECK_UTILS_STATUS(status)  \
+  do {                              \
+    const UtilsStatus S = (status); \
+    if (S != kOk) return S;         \
+  } while (0);
+
 typedef std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>
     EnclosedWebPPicture;
 
 namespace libwebp {
 
-enum UtilsStatus {
-  kOk = 0,       // On success.
-  kMemoryError,  // In case of memory error.
-  kGenericError  // For other errors.
+enum [[nodiscard]] UtilsStatus{
+    kOk = 0,       // On success.
+    kMemoryError,  // In case of memory error.
+    kGenericError  // For other errors.
+};
+
+struct Frame {
+  EnclosedWebPPicture pic;
+  int timestamp;  // Ending timestamp in milliseconds.
 };
 
 // Stores the PSNR values for a thumbnail with various statistics.
@@ -61,23 +72,23 @@ struct ThumbnailDiffPSNR {
   float median_psnr_diff;
 };
 
-// Converts WebPData (animation) into WebPPictures.
-UtilsStatus AnimData2Pictures(WebPData* const webp_data,
-                              std::vector<EnclosedWebPPicture>* const pics);
+// Converts WebPData (animation) into Frame(s).
+UtilsStatus AnimData2Frames(WebPData* const webp_data,
+                            std::vector<Frame>* const pics);
 
-// Takes WebPData having original_pics as source, calls AnimData2Pictures.
-// Records PSNR values for every WebPPictures and various PSNR stats.
-UtilsStatus AnimData2PSNR(const std::vector<EnclosedWebPPicture>& original_pics,
+// Takes WebPData having original_frames as source, calls AnimData2Frames.
+// Records PSNR values for every WebPPicture and various PSNR stats.
+UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
                           WebPData* const webp_data,
                           ThumbnailStatsPSNR* const stats);
 
-// Takes two thumbnails as WebPData and original frames as WebPPicture(s).
+// Takes the original frames, and two thumbnails as WebPData.
 // Records the differences in PSNR between two thumbnails and various stats.
 // Differences are with respect to webp_data_1.
-UtilsStatus CompareThumbnail(
-    const std::vector<EnclosedWebPPicture>& original_pics,
-    WebPData* const webp_data_1, WebPData* const webp_data_2,
-    ThumbnailDiffPSNR* const stats);
+UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
+                             WebPData* const webp_data_1,
+                             WebPData* const webp_data_2,
+                             ThumbnailDiffPSNR* const stats);
 
 void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats);
 
@@ -85,4 +96,4 @@ void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff);
 
 }  // namespace libwebp
 
-#endif  // THUMBNAILER_SRC_THUMBNAILER_UTILS_H_
+#endif  // THUMBNAILER_SRC_UTILS_THUMBNAILER_UTILS_H_
