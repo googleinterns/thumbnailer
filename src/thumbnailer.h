@@ -99,6 +99,8 @@ class Thumbnailer {
   // frame.
   Status GenerateAnimationSlopeOptim(WebPData* const webp_data);
 
+  Status NearLosslessEqualPreProcess(WebPData* const webp_data);
+
  private:
   struct FrameData {
     WebPPicture pic;
@@ -148,6 +150,8 @@ class Thumbnailer {
   // TryNearLossless() must be respectively called before to generate the
   // animation.
   Status LossyEncodeNoSlopeOptim(WebPData* const Webp_data);
+
+  int GetAnimationSize(WebPData* const webp_data);
 };
 
 }  // namespace libwebp
