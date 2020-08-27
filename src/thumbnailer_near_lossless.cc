@@ -115,10 +115,11 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
         new_anim_size <= byte_budget_) {
       anim_size = new_anim_size;
       near_lossless_frames.push_back(curr_ind);
+      std::cout << curr_ind << " ";
       frames_[curr_ind].encoded_size = new_size;
       frames_[curr_ind].final_psnr = new_psnr;
       frames_[curr_ind].final_quality = 90;
-      frames_[curr_ind].near_lossless = 1;
+      frames_[curr_ind].near_lossless = true;
     } else {
       frames_[curr_ind].config.lossless = 0;
       frames_[curr_ind].config.quality = frames_[curr_ind].final_quality;
@@ -128,8 +129,6 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
   if (near_lossless_frames.empty()) return kOk;
   WebPDataClear(webp_data);
   CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
-  std::cout << webp_data->size << " " << near_lossless_frames.size()
-            << std::endl;
 
   int min_near_lossless = 1;
   int max_near_lossless = 100;
@@ -167,8 +166,10 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
       max_near_lossless = mid_near_lossless - 1;
     }
   }
+
   std::cout << "Final near-lossless pre-processing value: "
             << final_near_lossless << std::endl;
+
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 

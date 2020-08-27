@@ -177,11 +177,15 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
 Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPData* const webp_data) {
+  WebPData new_webp_data;
+  WebPDataInit(&new_webp_data);
   int anim_size = GetAnimationSize(webp_data);
 
   // if the `anim_size` exceed the `byte_budget`, keep the webp_data generated
   // by the previous steps as result and do nothing here.
   if (anim_size > byte_budget_) return kOk;
+
+  std::cout << "day ne " << anim_size << std::endl;
 
   int num_remaining_frames = frames_.size();
   int curr_ind = 0;
@@ -230,8 +234,14 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     frame.config.lossless = frame.near_lossless;
   }
 
-  WebPDataClear(webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+
+  if (new_webp_data.size <= byte_budget_) {
+    WebPDataClear(webp_data);
+    *webp_data = new_webp_data;
+  } else {
+    WebPDataClear(&new_webp_data);
+  }
 
   std::cout << std::endl << "(Final quality, Near-lossless) :" << std::endl;
   for (auto& frame : frames_) {
