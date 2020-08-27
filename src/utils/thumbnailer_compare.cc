@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
   WebPDataInit(&webp_data);
 
   for (const libwebp::Thumbnailer::Method& method :
-       libwebp::Thumbnailer::MethodList) {
+       libwebp::Thumbnailer::kMethodList) {
     std::cerr << "----- Method " << method << " -----" << std::endl;
 
     libwebp::Thumbnailer thumbnailer;

@@ -63,8 +63,8 @@ class Thumbnailer {
   };
 
   enum Method { kEqualQuality = 0, kEqualPSNR, kSlopeOptim };
-  static constexpr Method MethodList[] = {kEqualQuality, kEqualPSNR,
-                                          kSlopeOptim};
+  static constexpr Method kMethodList[] = {kEqualQuality, kEqualPSNR,
+                                           kSlopeOptim};
 
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
   // outlive the last GenerateAnimation() call.
