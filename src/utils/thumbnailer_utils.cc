@@ -145,6 +145,7 @@ UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
 
 void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
   if (stats.psnr.empty()) return;
+  std::cerr << std::endl;
   std::cerr << "Frame count: " << stats.psnr.size() << std::endl;
 
   std::cerr << std::fixed << std::showpoint;
@@ -163,11 +164,13 @@ void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
             << std::endl;
   std::cerr << std::setw(14) << std::left
             << "Median PSNR: " << stats.median_psnr << std::endl;
-  std::cerr << std::endl;
+  std::cerr << std::resetiosflags(std::ios::fixed)
+            << std::resetiosflags(std::ios::showpoint) << std::endl;
 }
 
 void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
   if (diff.psnr_diff.empty()) return;
+  std::cerr << std::endl;
   std::cerr << "Frame count: " << diff.psnr_diff.size() << std::endl;
 
   std::cerr << std::showpos;
@@ -197,7 +200,9 @@ void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
             << "Mean PSNR change: " << diff.mean_psnr_diff << std::endl;
   std::cerr << std::setw(21) << std::left
             << "Median PSNR change: " << diff.median_psnr_diff << std::endl;
-  std::cerr << std::noshowpos << std::endl;
+  std::cerr << std::resetiosflags(std::ios::showpos)
+            << std::resetiosflags(std::ios::fixed)
+            << std::resetiosflags(std::ios::showpoint) << std::endl;
 }
 
 }  // namespace libwebp

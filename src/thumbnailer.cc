@@ -115,6 +115,20 @@ Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
   return kOk;
 }
 
+Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data,
+                                                   Method method) {
+  if (method == kEqualQuality) {
+    return GenerateAnimationEqualQuality(webp_data);
+  } else if (method == kEqualPSNR) {
+    return GenerateAnimationEqualPSNR(webp_data);
+  } else if (method == kSlopeOptim) {
+    return GenerateAnimationSlopeOptim(webp_data);
+  } else {
+    std::cerr << "Invalid method." << std::endl;
+    return kGenericError;
+  }
+}
+
 Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
     WebPData* const webp_data) {
   // Delete the previous WebPAnimEncoder object and initialize a new one.
@@ -153,7 +167,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
   return SetLoopCount(webp_data);
 }
 
-Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
+Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
+    WebPData* const webp_data) {
   // Sort frames.
   std::sort(frames_.begin(), frames_.end(),
             [](const FrameData& a, const FrameData& b) -> bool {
@@ -208,7 +223,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data) {
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     WebPData* const webp_data) {
-  CHECK_THUMBNAILER_STATUS(GenerateAnimation(webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationEqualQuality(webp_data));
 
   int high_psnr = -1;
   int low_psnr = -1;

@@ -45,10 +45,10 @@ typedef std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>
 
 namespace libwebp {
 
-enum UtilsStatus {
-  kOk = 0,       // On success.
-  kMemoryError,  // In case of memory error.
-  kGenericError  // For other errors.
+enum [[nodiscard]] UtilsStatus{
+    kOk = 0,       // On success.
+    kMemoryError,  // In case of memory error.
+    kGenericError  // For other errors.
 };
 
 struct Frame {
