@@ -134,7 +134,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
   CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
 
   // Use binary search to find the highest pre-processing value to encode all
-  // frames in the `near_ll_frames` vector.
+  // frames in the 'near_ll_frames' vector.
   int min_near_ll = 1;
   int max_near_ll = 100;
   int final_near_ll = 0;
@@ -142,7 +142,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
     anim_size = GetAnimationSize(webp_data);
     int mid_near_lossless = (min_near_ll + max_near_ll) / 2;
     // vector containing pair of (new size, new psnr) for all frames in the
-    // `near_ll_frames` vector.
+    // 'near_ll_frames' vector.
     std::vector<std::pair<int, float>> new_size_psnr;
 
     for (int curr_ind : near_ll_frames) {
