@@ -185,8 +185,6 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
   // by the previous steps as result and do nothing here.
   if (anim_size > byte_budget_) return kOk;
 
-  std::cout << "day ne " << anim_size << std::endl;
-
   int num_remaining_frames = frames_.size();
   int curr_ind = 0;
 
@@ -241,6 +239,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     *webp_data = new_webp_data;
   } else {
     WebPDataClear(&new_webp_data);
+    return kOk;
   }
 
   std::cout << std::endl << "(Final quality, Near-lossless) :" << std::endl;

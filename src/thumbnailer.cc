@@ -98,6 +98,17 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
   return kOk;
 }
 
+int Thumbnailer::GetAnimationSize(WebPData* const webp_data) {
+  // The webp_data->size and the sum of encoded-frame sizes are inconsistent,
+  // therefore consider the bigger one as the current animation size to ensure
+  // the resulting animation size fit the byte budget.
+  int sum_frame_sizes = 0;
+  for (auto& frame : frames_) {
+    sum_frame_sizes += frame.encoded_size;
+  }
+  return std::max(sum_frame_sizes, int(webp_data->size));
+}
+
 Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
   std::unique_ptr<WebPMux, void (*)(WebPMux*)> mux(WebPMuxCreate(webp_data, 1),
                                                    WebPMuxDelete);
@@ -340,17 +351,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
-}
-
-int Thumbnailer::GetAnimationSize(WebPData* const webp_data) {
-  // The webp_data->size and the sum of encoded-frame sizes are inconsistent,
-  // therefore consider the bigger one as the current animation size to ensure
-  // the resulting animation size fit the byte budget.
-  int sum_frame_sizes = 0;
-  for (auto& frame : frames_) {
-    sum_frame_sizes += frame.encoded_size;
-  }
-  return std::max(sum_frame_sizes, int(webp_data->size));
 }
 
 }  // namespace libwebp
