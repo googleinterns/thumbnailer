@@ -99,7 +99,7 @@ class Thumbnailer {
   // frame.
   Status GenerateAnimationSlopeOptim(WebPData* const webp_data);
 
-  Status NearLosslessEqualPreProcess(WebPData* const webp_data);
+  Status NearLosslessEqualPreProcessing(WebPData* const webp_data);
 
  private:
   struct FrameData {

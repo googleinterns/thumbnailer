@@ -25,7 +25,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   }
 
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
-  CHECK_THUMBNAILER_STATUS(TryNearLossless(webp_data));
+  CHECK_THUMBNAILER_STATUS(NearLosslessEqualPreProcessing(webp_data));
 
   int curr_anim_size = webp_data->size;
   const int KMaxIter = 5;

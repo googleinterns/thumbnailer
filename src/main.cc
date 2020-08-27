@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     if (try_equal_psnr) {
       thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
     } else {
-      thumbnailer.GenerateAnimation(&webp_data);
+      thumbnailer.GenerateAnimationEqualQuality(&webp_data);
     }
 
     if (try_near_lossless) {

@@ -85,4 +85,91 @@ Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
+Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
+    WebPData* const webp_data) {
+  const int num_frames = frames_.size();
+
+  std::pair<int, int> encoding_order[num_frames];
+  for (int i = 0; i < num_frames; ++i) {
+    encoding_order[i] = std::make_pair(frames_[i].encoded_size, i);
+  }
+  std::sort(encoding_order, encoding_order + num_frames,
+            [](const std::pair<int, int>& x, const std::pair<int, int>& y) {
+              return x.first < y.first;
+            });
+
+  std::vector<int> near_lossless_frames;
+  int anim_size = GetAnimationSize(webp_data);
+
+  for (int i = 0; i < num_frames; ++i) {
+    const int curr_ind = encoding_order[i].second;
+    frames_[curr_ind].config.lossless = 1;
+    frames_[curr_ind].config.quality = 90;
+    frames_[curr_ind].config.near_lossless = 0;
+    int new_size;
+    float new_psnr;
+    CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
+    const int new_anim_size =
+        anim_size - frames_[curr_ind].encoded_size + new_size;
+    if (new_psnr >= frames_[curr_ind].final_psnr &&
+        new_anim_size <= byte_budget_) {
+      anim_size = new_anim_size;
+      near_lossless_frames.push_back(curr_ind);
+      frames_[curr_ind].encoded_size = new_size;
+      frames_[curr_ind].final_psnr = new_psnr;
+      frames_[curr_ind].final_quality = 90;
+      frames_[curr_ind].near_lossless = 1;
+    } else {
+      frames_[curr_ind].config.lossless = 0;
+      frames_[curr_ind].config.quality = frames_[curr_ind].final_quality;
+    }
+  }
+
+  if (near_lossless_frames.empty()) return kOk;
+  WebPDataClear(webp_data);
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
+  std::cout << webp_data->size << " " << near_lossless_frames.size()
+            << std::endl;
+
+  int min_near_lossless = 1;
+  int max_near_lossless = 100;
+  int final_near_lossless = 0;
+  while (min_near_lossless <= max_near_lossless) {
+    anim_size = GetAnimationSize(webp_data);
+    int mid_near_lossless = (min_near_lossless + max_near_lossless) / 2;
+    std::vector<std::pair<int, float>> new_size_psnr;
+    for (int curr_ind : near_lossless_frames) {
+      frames_[curr_ind].config.near_lossless = mid_near_lossless;
+      int new_size;
+      float new_psnr;
+      CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
+      const int new_anim_size =
+          anim_size - frames_[curr_ind].encoded_size + new_size;
+      if (new_psnr >= frames_[curr_ind].final_psnr &&
+          new_anim_size <= byte_budget_) {
+        new_size_psnr.push_back(std::make_pair(new_size, new_psnr));
+        anim_size = new_anim_size;
+      } else {
+        break;
+      }
+    }
+    if (new_size_psnr.size() == near_lossless_frames.size()) {
+      WebPDataClear(webp_data);
+      CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
+      for (int i = 0; i < new_size_psnr.size(); ++i) {
+        const int curr_ind = near_lossless_frames[i];
+        frames_[curr_ind].encoded_size = new_size_psnr[i].first;
+        frames_[curr_ind].final_psnr = new_size_psnr[i].second;
+      }
+      final_near_lossless = mid_near_lossless;
+      min_near_lossless = mid_near_lossless + 1;
+    } else {
+      max_near_lossless = mid_near_lossless - 1;
+    }
+  }
+  std::cout << "Final near-lossless pre-processing value: "
+            << final_near_lossless << std::endl;
+  return (webp_data->size > 0) ? kOk : kByteBudgetError;
+}
+
 }  // namespace libwebp
