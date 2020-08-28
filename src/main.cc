@@ -94,9 +94,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (try_near_lossless == 0) {
-      thumbnailer.NearLosslessDiffPrediction(&webp_data);
+      thumbnailer.NearLosslessDiff(&webp_data);
     } else if (try_near_lossless == 1) {
-      thumbnailer.NearLosslessEqualPrediction(&webp_data);
+      thumbnailer.NearLosslessEqual(&webp_data);
     }
   }
 

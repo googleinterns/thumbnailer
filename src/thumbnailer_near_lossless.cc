@@ -16,8 +16,7 @@
 
 namespace libwebp {
 
-Thumbnailer::Status Thumbnailer::NearLosslessDiffPrediction(
-    WebPData* const webp_data) {
+Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
 
   std::cerr << std::endl
@@ -86,8 +85,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiffPrediction(
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
-Thumbnailer::Status Thumbnailer::NearLosslessEqualPrediction(
-    WebPData* const webp_data) {
+Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
   const int num_frames = frames_.size();
 
   // Encode frames following the ascending order of frame sizes.

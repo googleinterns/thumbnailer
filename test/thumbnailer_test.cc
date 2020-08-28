@@ -133,10 +133,10 @@ TEST_P(GenerateAnimationTest, IsGenerated) {
   }
 
   if (try_near_lossless == 1) {
-    ASSERT_EQ(thumbnailer.NearLosslessDiffPrediction(webp_data.get()),
+    ASSERT_EQ(thumbnailer.NearLosslessDiff(webp_data.get()),
               libwebp::Thumbnailer::kOk);
   } else if (try_near_lossless == 2) {
-    ASSERT_EQ(thumbnailer.NearLosslessEqualPrediction(webp_data.get()),
+    ASSERT_EQ(thumbnailer.NearLosslessEqual(webp_data.get()),
               libwebp::Thumbnailer::kOk);
   }
 
