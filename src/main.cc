@@ -93,10 +93,10 @@ int main(int argc, char* argv[]) {
       thumbnailer.GenerateAnimationEqualQuality(&webp_data);
     }
 
-    if (!try_near_lossless) {
-      thumbnailer.NearLosslessDiffPreProcessing(&webp_data);
+    if (try_near_lossless == 0) {
+      thumbnailer.NearLosslessDiffPrediction(&webp_data);
     } else if (try_near_lossless == 1) {
-      thumbnailer.NearLosslessEqualPreProcessing(&webp_data);
+      thumbnailer.NearLosslessEqualPrediction(&webp_data);
     }
   }
 

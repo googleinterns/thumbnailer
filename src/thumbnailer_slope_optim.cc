@@ -25,7 +25,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   }
 
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
-  CHECK_THUMBNAILER_STATUS(NearLosslessEqualPreProcessing(webp_data));
+  CHECK_THUMBNAILER_STATUS(NearLosslessEqualPrediction(webp_data));
 
   int curr_anim_size = webp_data->size;
   const int KMaxIter = 5;
@@ -177,8 +177,6 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
 Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPData* const webp_data) {
-  WebPData new_webp_data;
-  WebPDataInit(&new_webp_data);
   int anim_size = GetAnimationSize(webp_data);
 
   // if the `anim_size` exceed the `byte_budget`, keep the webp_data generated
@@ -232,6 +230,8 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     frame.config.lossless = frame.near_lossless;
   }
 
+  WebPData new_webp_data;
+  WebPDataInit(&new_webp_data);
   CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
 
   if (new_webp_data.size <= byte_budget_) {

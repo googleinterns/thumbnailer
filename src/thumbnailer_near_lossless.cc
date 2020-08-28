@@ -16,7 +16,7 @@
 
 namespace libwebp {
 
-Thumbnailer::Status Thumbnailer::NearLosslessDiffPreProcessing(
+Thumbnailer::Status Thumbnailer::NearLosslessDiffPrediction(
     WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
 
@@ -86,7 +86,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiffPreProcessing(
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
-Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
+Thumbnailer::Status Thumbnailer::NearLosslessEqualPrediction(
     WebPData* const webp_data) {
   const int num_frames = frames_.size();
 
@@ -178,6 +178,10 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqualPreProcessing(
 
   std::cout << "Final near-lossless pre-processing value: " << final_near_ll
             << std::endl;
+
+  for (int curr_ind : near_ll_frames) {
+    frames_[curr_ind].config.near_lossless = final_near_ll;
+  }
 
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }

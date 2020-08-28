@@ -93,14 +93,14 @@ class Thumbnailer {
   // GenerateAnimationEqualQuality() or GenerateAnimationEqualPSNR() must be
   // called before to generate animation with lossy encoding. In case of
   // failure, returns the latest lossy encoded frames.
-  Status NearLosslessDiffPreProcessing(WebPData* const webp_data);
+  Status NearLosslessDiffPrediction(WebPData* const webp_data);
 
   // Encodes frames with near-lossless compression using the same pre-processing
-  // value for all near-losslesss frames. Either GenerateAnimationEqualQuality()
+  // value for all near-lossless frames. Either GenerateAnimationEqualQuality()
   // or GenerateAnimationEqualPSNR() must be called before to generate animation
   // with lossy encoding. In case of failure, returns the latest lossy encoded
   // frames.
-  Status NearLosslessEqualPreProcessing(WebPData* const webp_data);
+  Status NearLosslessEqualPrediction(WebPData* const webp_data);
 
   // Generates the animation with the slope optimization for the RD-curve.
   // Either lossy and near-lossless compression modes will be used for each
