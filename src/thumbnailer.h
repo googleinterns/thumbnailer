@@ -88,11 +88,19 @@ class Thumbnailer {
   // GenerateAnimationEqualQuality().
   Status GenerateAnimationEqualPSNR(WebPData* const webp_data);
 
-  // Tries near-lossless to encode each frame. Either
+  // Encodes frames with near-lossless compression, the near-lossless
+  // pre-processing value for each frames can be different. Either
   // GenerateAnimationEqualQuality() or GenerateAnimationEqualPSNR() must be
   // called before to generate animation with lossy encoding. In case of
-  // failure, keeps the latest lossy encoded frame.
-  Status TryNearLossless(WebPData* const webp_data);
+  // failure, returns the latest lossy encoded frames.
+  Status NearLosslessDiff(WebPData* const webp_data);
+
+  // Encodes frames with near-lossless compression using the same pre-processing
+  // value for all near-lossless frames. Either GenerateAnimationEqualQuality()
+  // or GenerateAnimationEqualPSNR() must be called before to generate animation
+  // with lossy encoding. In case of failure, returns the latest lossy encoded
+  // frames.
+  Status NearLosslessEqual(WebPData* const webp_data);
 
   // Generates the animation with the slope optimization for the RD-curve.
   // Either lossy and near-lossless compression modes will be used for each
@@ -148,6 +156,9 @@ class Thumbnailer {
   // TryNearLossless() must be respectively called before to generate the
   // animation.
   Status LossyEncodeNoSlopeOptim(WebPData* const Webp_data);
+
+  // Returns animation size (in bytes).
+  int GetAnimationSize(WebPData* const webp_data);
 };
 
 }  // namespace libwebp

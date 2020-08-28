@@ -51,16 +51,16 @@ include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.proto)
 
-add_library(thumbnailer_slope_optim_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_slope_optim.cc ${PROTO_SRCS})
-target_include_directories(thumbnailer_slope_optim_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
-target_link_libraries(thumbnailer_slope_optim_lib protobuf::libprotobuf webp)
-
-add_library(thumbnailer_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.cc ${PROTO_SRCS})
+add_library(thumbnailer_lib 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer.cc 
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_slope_optim.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_near_lossless.cc
+            ${PROTO_SRCS})
 target_include_directories(thumbnailer_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
-target_link_libraries(thumbnailer_lib thumbnailer_slope_optim_lib protobuf::libprotobuf webp)
+target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 
 add_executable(thumbnailer ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
-target_link_libraries(thumbnailer thumbnailer_lib thumbnailer_slope_optim_lib imagedec)
+target_link_libraries(thumbnailer thumbnailer_lib imagedec)
 
 add_library(thumbnailer_utils_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/thumbnailer_utils.cc)
 target_link_libraries(thumbnailer_utils_lib webp imagedec)

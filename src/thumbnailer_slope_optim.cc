@@ -25,7 +25,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   }
 
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
-  CHECK_THUMBNAILER_STATUS(TryNearLossless(webp_data));
+  CHECK_THUMBNAILER_STATUS(NearLosslessEqual(webp_data));
 
   int curr_anim_size = webp_data->size;
   const int KMaxIter = 5;
@@ -177,14 +177,8 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
 Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPData* const webp_data) {
-  // The webp_data->size and the sum of encoded-frame sizes are inconsistent,
-  // therefore consider the bigger one as the current animation size to ensure
-  // the resulting animation size fit the byte budget.
-  int anim_size = 0;
-  for (auto& frame : frames_) {
-    anim_size += frame.encoded_size;
-  }
-  anim_size = std::max(anim_size, int(webp_data->size));
+  int anim_size = GetAnimationSize(webp_data);
+
   // if the `anim_size` exceed the `byte_budget`, keep the webp_data generated
   // by the previous steps as result and do nothing here.
   if (anim_size > byte_budget_) return kOk;
@@ -236,8 +230,17 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     frame.config.lossless = frame.near_lossless;
   }
 
-  WebPDataClear(webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
+  WebPData new_webp_data;
+  WebPDataInit(&new_webp_data);
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+
+  if (new_webp_data.size <= byte_budget_) {
+    WebPDataClear(webp_data);
+    *webp_data = new_webp_data;
+  } else {
+    WebPDataClear(&new_webp_data);
+    return kOk;
+  }
 
   std::cout << std::endl << "(Final quality, Near-lossless) :" << std::endl;
   for (auto& frame : frames_) {

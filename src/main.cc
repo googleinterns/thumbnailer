@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   WebPDataInit(&webp_data);
 
   bool try_equal_psnr = false;
-  bool try_near_lossless = false;
+  int try_near_lossless = -1;
   bool slope_optim = false;
 
   // Option-parsing pass.
@@ -69,9 +69,14 @@ int main(int argc, char* argv[]) {
     if (!strcmp(argv[c], "psnr")) {
       // Generate animation so that all frames have the same PSNR.
       try_equal_psnr = true;
-    } else if (!strcmp(argv[c], "try_near_lossless")) {
-      // Generate animation allowing near-lossless method.
-      try_near_lossless = true;
+    } else if (!strcmp(argv[c], "near_lossless_diff_pre_processing")) {
+      // Generate animation allowing near-lossless method. The pre-processing
+      // value for each near-lossless frames can be different.
+      try_near_lossless = 0;
+    } else if (!strcmp(argv[c], "near_lossless_equal_pre_processing")) {
+      // Generate animation allowing near-lossless method. Use the same
+      // pre-processing value for all near-lossless frames.
+      try_near_lossless = 1;
     } else if (!strcmp(argv[c], "slope_optimization")) {
       // Generate animation with slop optimization, 'try_equal_psnr' and
       // 'try_near_lossless' must be false when using this method.
@@ -85,11 +90,13 @@ int main(int argc, char* argv[]) {
     if (try_equal_psnr) {
       thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
     } else {
-      thumbnailer.GenerateAnimation(&webp_data);
+      thumbnailer.GenerateAnimationEqualQuality(&webp_data);
     }
 
-    if (try_near_lossless) {
-      thumbnailer.TryNearLossless(&webp_data);
+    if (try_near_lossless == 0) {
+      thumbnailer.NearLosslessDiff(&webp_data);
+    } else if (try_near_lossless == 1) {
+      thumbnailer.NearLosslessEqual(&webp_data);
     }
   }
 

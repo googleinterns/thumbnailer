@@ -98,6 +98,17 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
   return kOk;
 }
 
+int Thumbnailer::GetAnimationSize(WebPData* const webp_data) {
+  // The webp_data->size and the sum of encoded-frame sizes are inconsistent,
+  // therefore consider the bigger one as the current animation size to ensure
+  // the resulting animation size fit the byte budget.
+  int sum_frame_sizes = 0;
+  for (auto& frame : frames_) {
+    sum_frame_sizes += frame.encoded_size;
+  }
+  return std::max(sum_frame_sizes, int(webp_data->size));
+}
+
 Thumbnailer::Status Thumbnailer::SetLoopCount(WebPData* const webp_data) {
   std::unique_ptr<WebPMux, void (*)(WebPMux*)> mux(WebPMuxCreate(webp_data, 1),
                                                    WebPMuxDelete);
@@ -337,103 +348,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   }
 
   std::cout << std::endl << "Final PSNR: " << final_psnr << std::endl;
-
-  if (loop_count_ == 0) return kOk;
-  return SetLoopCount(webp_data);
-}
-
-Thumbnailer::Status Thumbnailer::TryNearLossless(WebPData* const webp_data) {
-  // The webp_data->size and the sum of encoded-frame sizes are inconsistent,
-  // therefore consider the bigger one as the current animation size to ensure
-  // the resulting animation size fit the byte budget.
-  int anim_size = 0;
-  for (auto& frame : frames_) {
-    anim_size += frame.encoded_size;
-  }
-  anim_size = std::max(anim_size, int(webp_data->size));
-
-  WebPAnimEncoderDelete(enc_);
-  enc_ = WebPAnimEncoderNew(frames_[0].pic.width, frames_[0].pic.height,
-                            &anim_config_);
-  if (enc_ == nullptr) return kMemoryError;
-
-  std::cerr << std::endl
-            << "Final near-lossless's pre-processing values:" << std::endl;
-
-  int curr_ind = 0;
-  for (auto& frame : frames_) {
-    int curr_size = frame.encoded_size;
-    float curr_psnr = frame.final_psnr;
-
-    int min_near_ll = 0;
-    int max_near_ll = 100;
-    int final_near_ll = -1;
-
-    frame.config.lossless = 1;
-    frame.config.near_lossless = 0;
-    frame.config.quality = 90;
-    int new_size;
-    float new_psnr;
-    CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
-
-    // Only try binary search if near-lossles encoding with pre-processing = 0
-    // is feasible in order to save execution time.
-    if (anim_size - curr_size + new_size <= byte_budget_) {
-      // Binary search for near-lossless's pre-processing value.
-      while (min_near_ll <= max_near_ll) {
-        int mid_near_ll = (min_near_ll + max_near_ll) / 2;
-        frame.config.near_lossless = mid_near_ll;
-        CHECK_THUMBNAILER_STATUS(
-            GetPictureStats(curr_ind, &new_size, &new_psnr));
-        if (anim_size - curr_size + new_size <= byte_budget_) {
-          if (new_psnr > curr_psnr) {
-            final_near_ll = mid_near_ll;
-            frame.encoded_size = new_size;
-            frame.final_psnr = new_psnr;
-            frame.final_quality = frame.config.quality;
-            frame.near_lossless = true;
-            anim_size = anim_size - curr_size + new_size;
-            curr_size = new_size;
-            curr_psnr = new_psnr;
-          }
-          min_near_ll = mid_near_ll + 1;
-        } else {
-          max_near_ll = mid_near_ll - 1;
-        }
-      }
-    }
-
-    std::cerr << final_near_ll << " ";
-
-    if (final_near_ll == -1) {
-      frame.config.lossless = 0;
-      frame.config.quality = frame.final_quality;
-    } else {
-      frame.config.near_lossless = final_near_ll;
-    }
-
-    WebPPicture new_pic;
-    if (!WebPPictureCopy(&frame.pic, &new_pic) ||
-        !WebPAnimEncoderAdd(enc_, &new_pic, frame.timestamp_ms,
-                            &frame.config)) {
-      WebPPictureFree(&new_pic);
-      return kMemoryError;
-    }
-    WebPPictureFree(&new_pic);
-    ++curr_ind;
-  }
-
-  std::cerr << std::endl;
-
-  // Add last frame.
-  if (!WebPAnimEncoderAdd(enc_, NULL, frames_.back().timestamp_ms, NULL)) {
-    return kMemoryError;
-  }
-
-  WebPDataClear(webp_data);
-  if (!WebPAnimEncoderAssemble(enc_, webp_data)) {
-    return kMemoryError;
-  }
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
