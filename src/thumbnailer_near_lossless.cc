@@ -19,9 +19,6 @@ namespace libwebp {
 Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
 
-  std::cerr << std::endl
-            << "Final near-lossless's pre-processing values:" << std::endl;
-
   int curr_ind = 0;
   for (auto& frame : frames_) {
     int curr_size = frame.encoded_size;
@@ -65,8 +62,6 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
       }
     }
 
-    std::cerr << final_near_ll << " ";
-
     if (final_near_ll == -1) {
       frame.config.lossless = 0;
       frame.config.quality = frame.final_quality;
@@ -77,7 +72,15 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     ++curr_ind;
   }
 
-  std::cerr << std::endl;
+  std::cout << "Final near-lossless's pre-processing values:" << std::endl;
+  for (const auto& frame : frames_) {
+    if (frame.config.lossless == 0) {
+      std::cout << -1 << ' ';
+    } else {
+      std::cout << frame.config.near_lossless << ' ';
+    }
+  }
+  std::cout << std::endl;
 
   WebPDataClear(webp_data);
   CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
@@ -127,7 +130,11 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     }
   }
 
-  if (near_ll_frames.empty()) return kOk;
+  if (near_ll_frames.empty()) {
+    std::cout << "No near lossless frames to process." << std::endl;
+    return kOk;
+  }
+
   WebPDataClear(webp_data);
   CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
 

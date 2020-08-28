@@ -38,6 +38,9 @@ Thumbnailer::Thumbnailer(
   if (thumbnailer_option.allow_mixed()) {
     anim_config_.allow_mixed = 1;
   }
+
+  // No inter-frames.
+  anim_config_.kmax = 1;
 }
 
 Thumbnailer::~Thumbnailer() { WebPAnimEncoderDelete(enc_); }
@@ -252,7 +255,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   }
 
   for (int target_psnr = high_psnr; target_psnr >= low_psnr; --target_psnr) {
-    std::cerr << "Target PSNR: " << target_psnr << ". Quality: ";
     bool all_frames_iterated = true;
 
     WebPAnimEncoderDelete(enc_);
@@ -283,7 +285,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       if (target_psnr > std::floor(frame_highest_psnr) ||
           target_psnr < std::floor(frame_lowest_psnr)) {
         all_frames_iterated = false;
-        std::cerr << "Target PSNR is out of range." << std::endl;
         break;
       }
 
@@ -312,7 +313,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       }
       WebPPictureFree(&new_pic);
       prev_timestamp = frame.timestamp_ms;
-      std::cerr << frame.config.quality << ' ';
       ++curr_ind;
     }
 
@@ -342,12 +342,11 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
         break;
       } else {
         WebPDataClear(&new_webp_data);
-        std::cerr << std::endl;
       }
     }
   }
 
-  std::cout << std::endl << "Final PSNR: " << final_psnr << std::endl;
+  std::cout << "Final PSNR: " << final_psnr << std::endl;
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
