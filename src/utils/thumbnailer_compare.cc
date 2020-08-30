@@ -68,7 +68,8 @@ int main(int argc, char* argv[]) {
 
   for (const libwebp::Thumbnailer::Method& method :
        libwebp::Thumbnailer::kMethodList) {
-    std::cerr << "----- Method " << method << " -----" << std::endl;
+    std::cerr << std::endl
+              << "----- Method " << method << " -----" << std::endl;
 
     libwebp::Thumbnailer thumbnailer;
     for (const libwebp::Frame& frame : frames) {

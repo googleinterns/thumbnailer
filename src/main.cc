@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
       ok = thumbnailer.GenerateAnimationEqualQuality(&webp_data);
     }
 
-    if (try_near_lossless == 0) {
+    if (ok == libwebp::Thumbnailer::Status::kOk && try_near_lossless == 0) {
       ok = thumbnailer.NearLosslessDiff(&webp_data);
     } else if (try_near_lossless == 1) {
       ok = thumbnailer.NearLosslessEqual(&webp_data);

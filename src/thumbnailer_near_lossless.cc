@@ -72,15 +72,15 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     ++curr_ind;
   }
 
-  std::cout << "Final near-lossless's pre-processing values:" << std::endl;
+  std::cerr << "Final near-lossless's pre-processing values:" << std::endl;
   for (const auto& frame : frames_) {
     if (frame.config.lossless == 0) {
-      std::cout << -1 << ' ';
+      std::cerr << -1 << ' ';
     } else {
-      std::cout << frame.config.near_lossless << ' ';
+      std::cerr << frame.config.near_lossless << ' ';
     }
   }
-  std::cout << std::endl;
+  std::cerr << std::endl;
 
   WebPDataClear(webp_data);
   CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
@@ -131,7 +131,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
   }
 
   if (near_ll_frames.empty()) {
-    std::cout << "No near lossless frames to process." << std::endl;
+    std::cerr << "No near lossless frames to process." << std::endl;
     return kOk;
   }
 
@@ -181,7 +181,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     }
   }
 
-  std::cout << "Final near-lossless pre-processing value: " << final_near_ll
+  std::cerr << "Final near-lossless pre-processing value: " << final_near_ll
             << std::endl;
 
   for (int curr_ind : near_ll_frames) {
