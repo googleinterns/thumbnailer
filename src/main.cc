@@ -53,11 +53,19 @@ int main(int argc, char* argv[]) {
 
     if (!ReadImage(filename_str.c_str(), current_frame)) {
       std::cerr << "Failed to read image " << filename_str << std::endl;
+      return 1;
     }
+
     if (thumbnailer.AddFrame(*current_frame, timestamp_ms) !=
         libwebp::Thumbnailer::Status::kOk) {
       std::cerr << "Failed to add frame " << filename_str << std::endl;
+      return 1;
     }
+  }
+
+  if (pics.empty()) {
+    std::cerr << "No input frame(s) for generating animation." << std::endl;
+    return 1;
   }
 
   // Write animation to file.

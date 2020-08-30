@@ -43,10 +43,13 @@ int main(int argc, char* argv[]) {
         {EnclosedWebPPicture(new WebPPicture, WebPPictureFree), timestamp});
     WebPPicture* pic = frames.back().pic.get();
     WebPPictureInit(pic);
-    ReadImage(filename_str.c_str(), pic);
+    if (!ReadImage(filename_str.c_str(), pic)) {
+      std::cerr << "Failed to read image " << filename_str << std::endl;
+      return 1;
+    }
   }
   if (frames.empty()) {
-    std::cerr << "No input file(s) for generating animation." << std::endl;
+    std::cerr << "No input frame(s) for generating animation." << std::endl;
     return 1;
   }
 
