@@ -56,11 +56,20 @@ int main(int argc, char* argv[]) {
   // Generate reference thumbnail.
   libwebp::Thumbnailer thumbnailer_ref;
   for (const libwebp::Frame& frame : frames) {
-    thumbnailer_ref.AddFrame(*frame.pic, frame.timestamp);
+    if (thumbnailer_ref.AddFrame(*frame.pic, frame.timestamp) !=
+        libwebp::Thumbnailer::Status::kOk) {
+      std::cerr << "Error adding frames." << std::endl;
+      return 1;
+    }
   }
   WebPData webp_data_ref;
   WebPDataInit(&webp_data_ref);
-  thumbnailer_ref.GenerateAnimationEqualQuality(&webp_data_ref);
+  if (thumbnailer_ref.GenerateAnimationEqualQuality(&webp_data_ref) !=
+      libwebp::Thumbnailer::Status::kOk) {
+    std::cerr << "Error generating reference thumbnail." << std::endl;
+    WebPDataClear(&webp_data_ref);
+    return 1;
+  }
 
   // Generate new thumbnails and compare to the reference thumbnail.
   WebPData webp_data;
@@ -72,17 +81,28 @@ int main(int argc, char* argv[]) {
               << "----- Method " << method << " -----" << std::endl;
 
     libwebp::Thumbnailer thumbnailer;
+    libwebp::Thumbnailer::Status status = libwebp::Thumbnailer::Status::kOk;
     for (const libwebp::Frame& frame : frames) {
-      thumbnailer.AddFrame(*frame.pic, frame.timestamp);
+      if (status == libwebp::Thumbnailer::Status::kOk) {
+        status = thumbnailer.AddFrame(*frame.pic, frame.timestamp);
+      }
     }
-    thumbnailer.GenerateAnimation(&webp_data, method);
 
-    libwebp::ThumbnailDiffPSNR diff;
-    if (libwebp::CompareThumbnail(frames, &webp_data_ref, &webp_data, &diff) ==
-        libwebp::kOk) {
-      libwebp::PrintThumbnailDiffPSNR(diff);
+    if (status == libwebp::Thumbnailer::Status::kOk) {
+      status = thumbnailer.GenerateAnimation(&webp_data, method);
+    }
+
+    if (status == libwebp::Thumbnailer::Status::kOk) {
+      libwebp::ThumbnailDiffPSNR diff;
+      if (libwebp::CompareThumbnail(frames, &webp_data_ref, &webp_data,
+                                    &diff) == libwebp::kOk) {
+        libwebp::PrintThumbnailDiffPSNR(diff);
+      } else {
+        std::cerr << "Comparison failed." << std::endl;
+      }
     } else {
-      std::cerr << "Comparison failed." << std::endl;
+      std::cerr << "Error generating thumbnail with method " << method
+                << std::endl;
     }
     WebPDataClear(&webp_data);
   }

@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
 
     if (thumbnailer.AddFrame(*current_frame, timestamp_ms) !=
         libwebp::Thumbnailer::Status::kOk) {
-      std::cerr << "Failed to add frame " << filename_str << std::endl;
+      std::cerr << "Error adding frame " << filename_str << std::endl;
       return 1;
     }
   }
@@ -76,7 +76,6 @@ int main(int argc, char* argv[]) {
   bool try_equal_psnr = false;
   int try_near_lossless = -1;
   bool slope_optim = false;
-  bool experiment = false;
 
   // Option-parsing pass.
   for (int c = 3; c < argc; c++) {
@@ -95,31 +94,29 @@ int main(int argc, char* argv[]) {
       // Generate animation with slope optimization, ignore 'try_equal_psnr'
       // and 'try_near_lossless'.
       slope_optim = true;
-    } else if (!strcmp(argv[c], "-exp")) {
-      experiment = true;
     }
   }
 
-  libwebp::Thumbnailer::Status ok;
+  libwebp::Thumbnailer::Status status;
   if (slope_optim) {
-    ok = thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
+    status = thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
   } else {
     if (try_equal_psnr) {
-      ok = thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
+      status = thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
     } else {
-      ok = thumbnailer.GenerateAnimationEqualQuality(&webp_data);
+      status = thumbnailer.GenerateAnimationEqualQuality(&webp_data);
     }
 
-    if (ok == libwebp::Thumbnailer::Status::kOk && try_near_lossless == 0) {
-      ok = thumbnailer.NearLosslessDiff(&webp_data);
+    if (status == libwebp::Thumbnailer::Status::kOk && try_near_lossless == 0) {
+      status = thumbnailer.NearLosslessDiff(&webp_data);
     } else if (try_near_lossless == 1) {
-      ok = thumbnailer.NearLosslessEqual(&webp_data);
+      status = thumbnailer.NearLosslessEqual(&webp_data);
     }
   }
-  if (ok == libwebp::Thumbnailer::Status::kOk) {
+  if (status == libwebp::Thumbnailer::Status::kOk) {
     ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
   } else {
-    std::cerr << "Failed to generate thumbnail." << std::endl;
+    std::cerr << "Error generating thumbnail." << std::endl;
   }
   WebPDataClear(&webp_data);
 

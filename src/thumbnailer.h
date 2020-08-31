@@ -49,17 +49,17 @@ class Thumbnailer {
   ~Thumbnailer();
 
   // Status codes for adding frame and generating animation.
-  enum Status {
-    kOk = 0,            // On success.
-    kMemoryError,       // In case of memory error.
-    kImageFormatError,  // If frame dimensions are mismatched.
-    kByteBudgetError,   // If there is no quality that makes the animation fit
-                        // the byte budget.
-    kStatsError,        // In case of error while getting frame's size and PSNR.
-    kWebPMuxError,      // In case of error related to WebPMux object.
-    kSlopeOptimError,   // In case of error while using slope optimization to
-                        // generate animation.
-    kGenericError       // For other errors.
+  enum [[nodiscard]] Status{
+      kOk = 0,            // On success.
+      kMemoryError,       // In case of memory error.
+      kImageFormatError,  // If frame dimensions are mismatched.
+      kByteBudgetError,   // If there is no quality that makes the animation fit
+                          // the byte budget.
+      kStatsError,    // In case of error while getting frame's size and PSNR.
+      kWebPMuxError,  // In case of error related to WebPMux object.
+      kSlopeOptimError,  // In case of error while using slope optimization to
+                         // generate animation.
+      kGenericError      // For other errors.
   };
 
   enum Method { kEqualQuality = 0, kEqualPSNR, kSlopeOptim };
