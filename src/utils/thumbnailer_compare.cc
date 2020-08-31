@@ -72,37 +72,37 @@ int main(int argc, char* argv[]) {
   }
 
   // Generate new thumbnails and compare to the reference thumbnail.
-  WebPData webp_data;
-  WebPDataInit(&webp_data);
-
   for (const libwebp::Thumbnailer::Method& method :
        libwebp::Thumbnailer::kMethodList) {
     std::cerr << std::endl
               << "----- Method " << method << " -----" << std::endl;
-
     libwebp::Thumbnailer thumbnailer;
-    libwebp::Thumbnailer::Status status = libwebp::Thumbnailer::Status::kOk;
+
+    libwebp::Thumbnailer::Status status;
     for (const libwebp::Frame& frame : frames) {
-      if (status == libwebp::Thumbnailer::Status::kOk) {
-        status = thumbnailer.AddFrame(*frame.pic, frame.timestamp);
+      status = thumbnailer.AddFrame(*frame.pic, frame.timestamp);
+      if (status != libwebp::Thumbnailer::Status::kOk) {
+        break;
       }
     }
-
-    if (status == libwebp::Thumbnailer::Status::kOk) {
-      status = thumbnailer.GenerateAnimation(&webp_data, method);
+    if (status != libwebp::Thumbnailer::Status::kOk) {
+      std::cerr << "Error adding frames." << std::endl;
+      continue;
     }
 
-    if (status == libwebp::Thumbnailer::Status::kOk) {
+    WebPData webp_data;
+    WebPDataInit(&webp_data);
+    if (thumbnailer.GenerateAnimation(&webp_data, method) ==
+        libwebp::Thumbnailer::Status::kOk) {
       libwebp::ThumbnailDiffPSNR diff;
       if (libwebp::CompareThumbnail(frames, &webp_data_ref, &webp_data,
-                                    &diff) == libwebp::kOk) {
+                                    &diff) == libwebp::UtilsStatus::kOk) {
         libwebp::PrintThumbnailDiffPSNR(diff);
       } else {
         std::cerr << "Comparison failed." << std::endl;
       }
     } else {
-      std::cerr << "Error generating thumbnail with method " << method
-                << std::endl;
+      std::cerr << "Error generating thumbnail." << std::endl;
     }
     WebPDataClear(&webp_data);
   }
