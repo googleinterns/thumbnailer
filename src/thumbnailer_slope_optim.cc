@@ -160,8 +160,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
     optim_list = new_optim_list;
   }
 
-  std::cout << "Final qualities with slope optimization: ";
-
+  std::cerr << "Final qualities with slope optimization:" << std::endl;
   int curr_ind = 0;
   for (auto& frame : frames_) {
     frame.config.quality = frame.final_quality;
@@ -169,8 +168,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
         GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
     std::cerr << frame.config.quality << " ";
   }
-
-  std::cout << std::endl;
+  std::cerr << std::endl;
 
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
@@ -242,13 +240,14 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     return kOk;
   }
 
-  std::cout << std::endl << "(Final quality, Near-lossless) :" << std::endl;
+  std::cerr << "(Final quality, Near-lossless) :" << std::endl;
   for (auto& frame : frames_) {
     std::cerr << "(" << frame.final_quality << ", " << frame.near_lossless
               << ") ";
   }
-  std::cout << std::endl;
+  std::cerr << std::endl;
 
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
+
 }  // namespace libwebp

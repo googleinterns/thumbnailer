@@ -19,7 +19,7 @@
 #include "thumbnailer.h"
 #include "thumbnailer.pb.h"
 
-// Returns true on success or false on failure.
+// Returns true on success and false on failure.
 static bool ReadImage(const char filename[], WebPPicture* const pic) {
   const uint8_t* data = NULL;
   size_t data_size = 0;
@@ -51,8 +51,21 @@ int main(int argc, char* argv[]) {
     WebPPicture* current_frame = pics.back().get();
     WebPPictureInit(current_frame);
 
-    ReadImage(filename_str.c_str(), current_frame);
-    thumbnailer.AddFrame(*current_frame, timestamp_ms);
+    if (!ReadImage(filename_str.c_str(), current_frame)) {
+      std::cerr << "Failed to read image " << filename_str << std::endl;
+      return 1;
+    }
+
+    if (thumbnailer.AddFrame(*current_frame, timestamp_ms) !=
+        libwebp::Thumbnailer::Status::kOk) {
+      std::cerr << "Error adding frame " << filename_str << std::endl;
+      return 1;
+    }
+  }
+
+  if (pics.empty()) {
+    std::cerr << "No input frame(s) for generating animation." << std::endl;
+    return 1;
   }
 
   // Write animation to file.
@@ -66,41 +79,45 @@ int main(int argc, char* argv[]) {
 
   // Option-parsing pass.
   for (int c = 3; c < argc; c++) {
-    if (!strcmp(argv[c], "psnr")) {
+    if (!strcmp(argv[c], "-psnr")) {
       // Generate animation so that all frames have the same PSNR.
       try_equal_psnr = true;
-    } else if (!strcmp(argv[c], "near_lossless_diff_pre_processing")) {
+    } else if (!strcmp(argv[c], "-near_ll_diff")) {
       // Generate animation allowing near-lossless method. The pre-processing
       // value for each near-lossless frames can be different.
       try_near_lossless = 0;
-    } else if (!strcmp(argv[c], "near_lossless_equal_pre_processing")) {
+    } else if (!strcmp(argv[c], "-near_ll_equal")) {
       // Generate animation allowing near-lossless method. Use the same
       // pre-processing value for all near-lossless frames.
       try_near_lossless = 1;
-    } else if (!strcmp(argv[c], "slope_optimization")) {
-      // Generate animation with slop optimization, 'try_equal_psnr' and
-      // 'try_near_lossless' must be false when using this method.
+    } else if (!strcmp(argv[c], "-slope_opt")) {
+      // Generate animation with slope optimization, ignore 'try_equal_psnr'
+      // and 'try_near_lossless'.
       slope_optim = true;
     }
   }
 
+  libwebp::Thumbnailer::Status status;
   if (slope_optim) {
-    thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
+    status = thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
   } else {
     if (try_equal_psnr) {
-      thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
+      status = thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
     } else {
-      thumbnailer.GenerateAnimationEqualQuality(&webp_data);
+      status = thumbnailer.GenerateAnimationEqualQuality(&webp_data);
     }
 
-    if (try_near_lossless == 0) {
-      thumbnailer.NearLosslessDiff(&webp_data);
+    if (status == libwebp::Thumbnailer::Status::kOk && try_near_lossless == 0) {
+      status = thumbnailer.NearLosslessDiff(&webp_data);
     } else if (try_near_lossless == 1) {
-      thumbnailer.NearLosslessEqual(&webp_data);
+      status = thumbnailer.NearLosslessEqual(&webp_data);
     }
   }
-
-  ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
+  if (status == libwebp::Thumbnailer::Status::kOk) {
+    ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
+  } else {
+    std::cerr << "Error generating thumbnail." << std::endl;
+  }
   WebPDataClear(&webp_data);
 
   google::protobuf::ShutdownProtobufLibrary();

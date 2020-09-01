@@ -79,8 +79,8 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
   for (const Frame& original_frame : original_frames) {
     // Check if the next frame of new_frames matches original_frame,
     // based on their timestamps.
-    if (new_frame_index + 1 < new_frames.size() &&
-        new_frames[new_frame_index + 1].timestamp == original_frame.timestamp) {
+    while (new_frame_index + 1 < new_frames.size() &&
+           new_frames[new_frame_index].timestamp < original_frame.timestamp) {
       ++new_frame_index;
     }
     const Frame& new_frame = new_frames[new_frame_index];
@@ -166,6 +166,9 @@ void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
             << "Median PSNR: " << stats.median_psnr << std::endl;
   std::cerr << std::resetiosflags(std::ios::fixed)
             << std::resetiosflags(std::ios::showpoint) << std::endl;
+
+  std::cout << stats.min_psnr << ' ' << stats.max_psnr << ' ' << stats.mean_psnr
+            << ' ' << stats.median_psnr << std::endl;
 }
 
 void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
@@ -203,6 +206,9 @@ void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
   std::cerr << std::resetiosflags(std::ios::showpos)
             << std::resetiosflags(std::ios::fixed)
             << std::resetiosflags(std::ios::showpoint) << std::endl;
+
+  std::cout << diff.max_psnr_decrease << ' ' << diff.max_psnr_increase << ' '
+            << diff.mean_psnr_diff << ' ' << diff.median_psnr_diff << std::endl;
 }
 
 }  // namespace libwebp
