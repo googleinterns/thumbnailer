@@ -90,7 +90,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
 
 Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
   const int num_frames = frames_.size();
-  // anim_config_.allow_mixed = 1;
+
   // Encode frames following the ascending order of frame sizes.
   std::pair<int, int> encoding_order[num_frames];
   for (int i = 0; i < num_frames; ++i) {
