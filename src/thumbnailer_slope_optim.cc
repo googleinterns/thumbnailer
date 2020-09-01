@@ -23,10 +23,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
     std::fill(frame.lossy_data, frame.lossy_data + 101,
               std::make_pair(-1, -1.0));
   }
-
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
   CHECK_THUMBNAILER_STATUS(NearLosslessEqual(webp_data));
-
   int curr_anim_size = webp_data->size;
   const int KMaxIter = 5;
   for (int i = 0; i < KMaxIter; ++i) {
@@ -95,6 +93,11 @@ Thumbnailer::Status Thumbnailer::ComputeSlope(int ind, int low_quality,
   float high_psnr;
   CHECK_THUMBNAILER_STATUS(GetPictureStats(ind, &high_size, &high_psnr));
 
+  // if (high_size == low_size) {
+  //   *slope = 0;
+  // } else {
+  //   *slope = (high_psnr - low_psnr) / float(high_size - low_size);
+  // }
   *slope = (high_psnr - low_psnr) / float(high_size - low_size);
 
   return kOk;
