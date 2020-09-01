@@ -157,7 +157,7 @@ class Thumbnailer {
   // animation.
   Status LossyEncodeNoSlopeOptim(WebPData* const webp_data);
 
-  // Status LossyEncodeNoSlopeOptim2(WebPData* const webp_data);
+  Status LossyEncodeNoSlopeOptim2(WebPData* const webp_data);
 
   // Returns animation size (in bytes).
   int GetAnimationSize(WebPData* const webp_data);
