@@ -27,8 +27,8 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
   CHECK_THUMBNAILER_STATUS(NearLosslessEqual(webp_data));
 
-  // if there is no frame encoded in near-lossless, generate animation with
-  // lossy encoding so that all frames have the same quality value.
+  // If there is no frame encoded in near-lossless, use
+  // GenerateAnimationEqualQuality() to generate animation.
   int num_near_ll_frames = 0;
   for (auto& frame : frames_)
     if (frame.near_lossless) {
@@ -194,7 +194,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
 
-  // if the 'anim_size' exceed the 'byte_budget', keep the webp_data generated
+  // If the 'anim_size' exceed the 'byte_budget', keep the webp_data generated
   // by the previous steps as result and do nothing here.
   if (anim_size > byte_budget_) return kOk;
 
