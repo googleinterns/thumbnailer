@@ -155,7 +155,11 @@ class Thumbnailer {
   // better PSNR values if possible. Both LossyEncodeSlopeOptim() and
   // TryNearLossless() must be respectively called before to generate the
   // animation.
-  Status LossyEncodeNoSlopeOptim(WebPData* const Webp_data);
+  Status LossyEncodeNoSlopeOptim(WebPData* const webp_data);
+
+  // Re-encodes frames with lossy compression mode using the unused extra budget
+  // from LossyEncodeNoSlopeOptim() in order to get better PSNR values.
+  Status ExtraLossyEncode(WebPData* const webp_data);
 
   // Returns animation size (in bytes).
   int GetAnimationSize(WebPData* const webp_data);

@@ -82,8 +82,17 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   }
   std::cerr << std::endl;
 
-  WebPDataClear(webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
+  WebPData new_webp_data;
+  WebPDataInit(&new_webp_data);
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  // If the animation size exceeds the byte budget, return the animation
+  // produced by previous method as result.
+  if (new_webp_data.size <= byte_budget_) {
+    WebPDataClear(webp_data);
+    *webp_data = new_webp_data;
+  } else {
+    WebPDataClear(&new_webp_data);
+  }
 
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
@@ -135,8 +144,18 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     return kOk;
   }
 
-  WebPDataClear(webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
+  WebPData new_webp_data;
+  WebPDataInit(&new_webp_data);
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  // If the animation size exceeds the byte budget, return the animation
+  // produced by previous method as result.
+  if (new_webp_data.size <= byte_budget_) {
+    WebPDataClear(webp_data);
+    *webp_data = new_webp_data;
+  } else {
+    WebPDataClear(&new_webp_data);
+    return kOk;
+  }
 
   // Use binary search to find the highest pre-processing value to encode all
   // frames in the 'near_ll_frames' vector.
@@ -146,7 +165,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
   while (min_near_ll <= max_near_ll) {
     anim_size = GetAnimationSize(webp_data);
     int mid_near_lossless = (min_near_ll + max_near_ll) / 2;
-    // vector containing pair of (new size, new psnr) for all frames in the
+    // Vector containing pair of (new size, new psnr) for all frames in the
     // 'near_ll_frames' vector.
     std::vector<std::pair<int, float>> new_size_psnr;
 
@@ -167,15 +186,21 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     }
 
     if (new_size_psnr.size() == near_ll_frames.size()) {
-      WebPDataClear(webp_data);
-      CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(webp_data));
-      for (int i = 0; i < new_size_psnr.size(); ++i) {
-        const int curr_ind = near_ll_frames[i];
-        frames_[curr_ind].encoded_size = new_size_psnr[i].first;
-        frames_[curr_ind].final_psnr = new_size_psnr[i].second;
+      CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+      if (new_webp_data.size <= byte_budget_) {
+        WebPDataClear(webp_data);
+        *webp_data = new_webp_data;
+        for (int i = 0; i < new_size_psnr.size(); ++i) {
+          const int curr_ind = near_ll_frames[i];
+          frames_[curr_ind].encoded_size = new_size_psnr[i].first;
+          frames_[curr_ind].final_psnr = new_size_psnr[i].second;
+        }
+        final_near_ll = mid_near_lossless;
+        min_near_ll = mid_near_lossless + 1;
+      } else {
+        WebPDataClear(&new_webp_data);
+        max_near_ll = mid_near_lossless - 1;
       }
-      final_near_ll = mid_near_lossless;
-      min_near_ll = mid_near_lossless + 1;
     } else {
       max_near_ll = mid_near_lossless - 1;
     }
