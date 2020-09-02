@@ -30,23 +30,21 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   // If there is no frame encoded in near-lossless, use
   // GenerateAnimationEqualQuality() to generate animation.
   int num_near_ll_frames = 0;
-  for (auto& frame : frames_)
-    if (frame.near_lossless) {
-      ++num_near_ll_frames;
-    }
-  if (!num_near_ll_frames) {
+  for (const auto& frame : frames_) {
+    if (frame.near_lossless) ++num_near_ll_frames;
+  }
+  if (num_near_ll_frames == 0) {
     CHECK_THUMBNAILER_STATUS(GenerateAnimationEqualQuality(webp_data));
-    return kOk;
+  } else {
+    int curr_anim_size = webp_data->size;
+    const int KMaxIter = 5;
+    for (int i = 0; i < KMaxIter; ++i) {
+      CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
+      if (curr_anim_size == webp_data->size) break;
+      curr_anim_size = webp_data->size;
+    }
+    CHECK_THUMBNAILER_STATUS(ExtraLossyEncode(webp_data));
   }
-
-  int curr_anim_size = webp_data->size;
-  const int KMaxIter = 5;
-  for (int i = 0; i < KMaxIter; ++i) {
-    CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
-    if (curr_anim_size == webp_data->size) break;
-    curr_anim_size = webp_data->size;
-  }
-  CHECK_THUMBNAILER_STATUS(ExtraLossyEncode(webp_data));
 
   return kOk;
 }
@@ -194,7 +192,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
 
-  // If the 'anim_size' exceed the 'byte_budget', keep the webp_data generated
+  // If the 'anim_size' exceeds the 'byte_budget', keep the webp_data generated
   // by the previous steps as result and do nothing here.
   if (anim_size > byte_budget_) return kOk;
 
@@ -285,11 +283,10 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
 
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
-  int num_remaining_frames = encoding_order.size();
 
   while (!encoding_order.empty()) {
     int min_quality = 100;
-    for (int i = 0; i < num_remaining_frames; ++i) {
+    for (int i = 0; i < encoding_order.size(); ++i) {
       const int curr_ind = encoding_order[i].second;
       min_quality = std::min(min_quality, frames_[curr_ind].final_quality + 1);
     }
@@ -298,7 +295,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
 
     while (min_quality <= max_quality) {
       int mid_quality = (min_quality + max_quality) / 2;
-      for (int i = 0; i < num_remaining_frames; ++i) {
+      for (int i = 0; i < encoding_order.size(); ++i) {
         const int curr_ind = encoding_order[i].second;
         frames_[curr_ind].config.quality =
             std::max(frames_[curr_ind].final_quality, mid_quality);
@@ -315,7 +312,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
       }
     }
     if (final_quality != -1) {
-      for (int i = 0; i < num_remaining_frames; ++i) {
+      for (int i = 0; i < encoding_order.size(); ++i) {
         const int curr_ind = encoding_order[i].second;
         if (frames_[curr_ind].final_quality < final_quality) {
           frames_[curr_ind].config.quality = final_quality;
@@ -329,8 +326,8 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
       break;
     }
 
+    // Discard flattest slopes to iterate on steepest ones.
     encoding_order.erase(encoding_order.begin());
-    --num_remaining_frames;
   }
 
   std::cerr << "(Final quality, Near-lossless) :" << std::endl;
