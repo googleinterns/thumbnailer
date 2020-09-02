@@ -27,24 +27,14 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
   CHECK_THUMBNAILER_STATUS(NearLosslessEqual(webp_data));
 
-  // If there is no frame encoded in near-lossless, use
-  // GenerateAnimationEqualQuality() to generate animation.
-  int num_near_ll_frames = 0;
-  for (const auto& frame : frames_) {
-    if (frame.near_lossless) ++num_near_ll_frames;
+  int curr_anim_size = webp_data->size;
+  const int KMaxIter = 5;
+  for (int i = 0; i < KMaxIter; ++i) {
+    CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
+    if (curr_anim_size == webp_data->size) break;
+    curr_anim_size = webp_data->size;
   }
-  if (num_near_ll_frames == 0) {
-    CHECK_THUMBNAILER_STATUS(GenerateAnimationEqualQuality(webp_data));
-  } else {
-    int curr_anim_size = webp_data->size;
-    const int KMaxIter = 5;
-    for (int i = 0; i < KMaxIter; ++i) {
-      CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
-      if (curr_anim_size == webp_data->size) break;
-      curr_anim_size = webp_data->size;
-    }
-    CHECK_THUMBNAILER_STATUS(ExtraLossyEncode(webp_data));
-  }
+  CHECK_THUMBNAILER_STATUS(ExtraLossyEncode(webp_data));
 
   return kOk;
 }
