@@ -11,7 +11,7 @@ message ThumbnailerOption {
 
   // Used for size estimation. May differ from actual number of frames in the
   // animation.
-  optional uint32 estimated_num_frames = 2 [default = 50];
+  optional uint32 estimated_num_frames = 2 [default = 24];
 
   // Number of times animation will loop.
   optional int32 loop_count = 3 [default = 0];

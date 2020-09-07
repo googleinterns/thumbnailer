@@ -229,7 +229,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
     CHECK_THUMBNAILER_STATUS(
         GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
   }
-  if (verbose_) std::cerr << "Final quality: " << final_quality << std::endl;
+  if (verbose_) std::cout << "Final quality: " << final_quality << std::endl;
 
   return (final_quality == -1) ? kByteBudgetError : kOk;
 }
@@ -344,7 +344,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       }
     }
   }
-  if (verbose_) std::cerr << "Final PSNR: " << final_psnr << std::endl;
+  if (verbose_) std::cout << "Final PSNR: " << final_psnr << std::endl;
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);
