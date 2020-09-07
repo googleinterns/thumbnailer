@@ -27,19 +27,19 @@ Thumbnailer::Thumbnailer() {
   loop_count_ = 0;
   byte_budget_ = 153600;
   minimum_lossy_quality_ = 0;
+  verbose_ = false;
 }
 
 Thumbnailer::Thumbnailer(
     const thumbnailer::ThumbnailerOption& thumbnailer_option) {
+  verbose_ = thumbnailer_option.verbose();
   WebPAnimEncoderOptionsInit(&anim_config_);
   loop_count_ = thumbnailer_option.loop_count();
   byte_budget_ = thumbnailer_option.soft_max_size();
   minimum_lossy_quality_ = thumbnailer_option.min_lossy_quality();
-  if (thumbnailer_option.allow_mixed()) {
-    anim_config_.allow_mixed = 1;
-  }
+  anim_config_.allow_mixed = thumbnailer_option.allow_mixed();
 
-  // No inter-frames.
+  // All frames are key frames.
   anim_config_.kmax = 1;
 }
 
@@ -229,8 +229,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
     CHECK_THUMBNAILER_STATUS(
         GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
   }
-
-  std::cerr << "Final quality: " << final_quality << std::endl;
+  if (verbose_) std::cout << "Final quality: " << final_quality << std::endl;
 
   return (final_quality == -1) ? kByteBudgetError : kOk;
 }
@@ -345,8 +344,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       }
     }
   }
-
-  std::cerr << "Final PSNR: " << final_psnr << std::endl;
+  if (verbose_) std::cout << "Final PSNR: " << final_psnr << std::endl;
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);

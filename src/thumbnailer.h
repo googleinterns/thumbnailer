@@ -127,6 +127,7 @@ class Thumbnailer {
   int loop_count_;
   int byte_budget_;
   int minimum_lossy_quality_;
+  bool verbose_;
 
   // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
   // size and PSNR will be stored in '*pic_size' and '*pic_PSNR' respectively.
