@@ -29,4 +29,7 @@ message ThumbnailerOption {
 
   // If true, thumbnailer will use much more CPU to compress lossless frames.
   optional bool use_cruncher = 7 [default = false];
+
+  // If true, thumbnailer will print various encoding statistics.
+  optional bool verbose = 8 [default = false];
 }

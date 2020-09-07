@@ -38,6 +38,34 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   thumbnailer::ThumbnailerOption thumbnailer_option;
 
+  bool try_equal_psnr = false;
+  int try_near_lossless = -1;
+  bool slope_optim = false;
+
+  for (int c = 3; c < argc; c++) {
+    if (!strcmp(argv[c], "-verbose")) {
+      thumbnailer_option.set_verbose(true);
+    }
+
+    // Parsing generating method.
+    if (!strcmp(argv[c], "-equal_psnr")) {
+      // Generate animation so that all frames have the same PSNR.
+      try_equal_psnr = true;
+    } else if (!strcmp(argv[c], "-near_ll_diff")) {
+      // Generate animation allowing near-lossless method. The pre-processing
+      // value for each near-lossless frames can be different.
+      try_near_lossless = 0;
+    } else if (!strcmp(argv[c], "-near_ll_equal")) {
+      // Generate animation allowing near-lossless method. Use the same
+      // pre-processing value for all near-lossless frames.
+      try_near_lossless = 1;
+    } else if (!strcmp(argv[c], "-slope_optim")) {
+      // Generate animation with slope optimization, ignore 'try_equal_psnr'
+      // and 'try_near_lossless'.
+      slope_optim = true;
+    }
+  }
+
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer(thumbnailer_option);
 
   // Process list of images and timestamps.
@@ -68,34 +96,10 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  // Write animation to file.
+  // Generate animation.
   const char* output = argv[2];
   WebPData webp_data;
   WebPDataInit(&webp_data);
-
-  bool try_equal_psnr = false;
-  int try_near_lossless = -1;
-  bool slope_optim = false;
-
-  // Option-parsing pass.
-  for (int c = 3; c < argc; c++) {
-    if (!strcmp(argv[c], "-psnr")) {
-      // Generate animation so that all frames have the same PSNR.
-      try_equal_psnr = true;
-    } else if (!strcmp(argv[c], "-near_ll_diff")) {
-      // Generate animation allowing near-lossless method. The pre-processing
-      // value for each near-lossless frames can be different.
-      try_near_lossless = 0;
-    } else if (!strcmp(argv[c], "-near_ll_equal")) {
-      // Generate animation allowing near-lossless method. Use the same
-      // pre-processing value for all near-lossless frames.
-      try_near_lossless = 1;
-    } else if (!strcmp(argv[c], "-slope_opt")) {
-      // Generate animation with slope optimization, ignore 'try_equal_psnr'
-      // and 'try_near_lossless'.
-      slope_optim = true;
-    }
-  }
 
   libwebp::Thumbnailer::Status status;
   if (slope_optim) {
@@ -113,6 +117,8 @@ int main(int argc, char* argv[]) {
       status = thumbnailer.NearLosslessEqual(&webp_data);
     }
   }
+
+  // Write animation to file.
   if (status == libwebp::Thumbnailer::Status::kOk) {
     ImgIoUtilWriteFile(output, webp_data.bytes, webp_data.size);
   } else {

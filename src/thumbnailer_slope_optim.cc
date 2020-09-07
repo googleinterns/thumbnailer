@@ -164,17 +164,17 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
     optim_list = new_optim_list;
   }
-
-  std::cerr << "Final qualities with slope optimization:" << std::endl;
-  int curr_ind = 0;
-  for (auto& frame : frames_) {
-    frame.config.quality = frame.final_quality;
-    CHECK_THUMBNAILER_STATUS(
-        GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
-    std::cerr << frame.config.quality << " ";
+  if (verbose_) {
+    std::cerr << "Final qualities with slope optimization:" << std::endl;
+    int curr_ind = 0;
+    for (auto& frame : frames_) {
+      frame.config.quality = frame.final_quality;
+      CHECK_THUMBNAILER_STATUS(
+          GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
+      std::cerr << frame.config.quality << " ";
+    }
+    std::cerr << std::endl;
   }
-  std::cerr << std::endl;
-
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
@@ -244,14 +244,14 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPDataClear(&new_webp_data);
     return kOk;
   }
-
-  std::cerr << "(Final quality, Near-lossless) :" << std::endl;
-  for (auto& frame : frames_) {
-    std::cerr << "(" << frame.final_quality << ", " << frame.near_lossless
-              << ") ";
+  if (verbose_) {
+    std::cerr << "(Final quality, Near-lossless) :" << std::endl;
+    for (auto& frame : frames_) {
+      std::cerr << "(" << frame.final_quality << ", " << frame.near_lossless
+                << ") ";
+    }
+    std::cerr << std::endl;
   }
-  std::cerr << std::endl;
-
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
@@ -319,14 +319,14 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
     // Discard flattest slopes to iterate on steepest ones.
     encoding_order.erase(encoding_order.begin());
   }
-
-  std::cerr << "(Final quality, Near-lossless) :" << std::endl;
-  for (auto& frame : frames_) {
-    std::cerr << "(" << frame.final_quality << ", " << frame.near_lossless
-              << ") ";
+  if (verbose_) {
+    std::cerr << "(Final quality, Near-lossless) :" << std::endl;
+    for (auto& frame : frames_) {
+      std::cerr << "(" << frame.final_quality << ", " << frame.near_lossless
+                << ") ";
+    }
+    std::cerr << std::endl;
   }
-  std::cerr << std::endl;
-
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
 }
 
