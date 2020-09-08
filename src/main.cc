@@ -65,7 +65,12 @@ int main(int argc, char* argv[]) {
       // and 'try_near_lossless'.
       slope_optim = true;
     } else if (!strcmp(argv[c], "-m")) {
+      // Effort/speed trade-off (0=fast, 6=slower-better), default value 4.
       thumbnailer_option.set_method(ExUtilGetInt(argv[++c], 0, &parse_error));
+    } else if (!strcmp(argv[c], "-slope_dpsnr")) {
+      // Maximum PSNR change used in slope optimization, default value 1.0.
+      thumbnailer_option.set_slope_dpsnr(
+          ExUtilGetFloat(argv[++c], &parse_error));
     }
   }
 
