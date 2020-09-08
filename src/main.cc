@@ -72,6 +72,10 @@ int main(int argc, char* argv[]) {
       thumbnailer_option.set_slope_dpsnr(
           ExUtilGetFloat(argv[++c], &parse_error));
     }
+    if (parse_error) {
+      std::cerr << "Error parsing options." << std::endl;
+      return 1;
+    }
   }
 
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer(thumbnailer_option);

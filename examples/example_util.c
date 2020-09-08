@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "webp/mux_types.h"
 #include "../imageio/imageio_util.h"
+#include "webp/mux_types.h"
 
 //------------------------------------------------------------------------------
 // String parsing
@@ -45,7 +45,7 @@ int ExUtilGetInts(const char* v, int base, int max_output, int output[]) {
     if (error) return -1;
     output[n] = value;
     v = strchr(v, ',');
-    if (v != NULL) ++v;   // skip over the trailing ','
+    if (v != NULL) ++v;  // skip over the trailing ','
   }
   return n;
 }
@@ -75,7 +75,7 @@ static void ResetCommandLineArguments(int argc, const char* argv[],
 void ExUtilDeleteCommandLineArguments(CommandLineArguments* const args) {
   if (args != NULL) {
     if (args->own_argv_) {
-      WebPFree((void*)args->argv_);
+      free((void*)args->argv_);
       WebPDataClear(&args->argv_data_);
     }
     ResetCommandLineArguments(0, NULL, args);
@@ -102,12 +102,11 @@ int ExUtilInitCommandLineArguments(int argc, const char* argv[],
       return 0;
     }
     args->own_argv_ = 1;
-    args->argv_ = (const char**)WebPMalloc(MAX_ARGC * sizeof(*args->argv_));
+    args->argv_ = (const char**)malloc(MAX_ARGC * sizeof(*args->argv_));
     if (args->argv_ == NULL) return 0;
 
     argc = 0;
-    for (cur = strtok((char*)args->argv_data_.bytes, sep);
-         cur != NULL;
+    for (cur = strtok((char*)args->argv_data_.bytes, sep); cur != NULL;
          cur = strtok(NULL, sep)) {
       if (argc == MAX_ARGC) {
         fprintf(stderr, "ERROR: Arguments limit %d reached\n", MAX_ARGC);
