@@ -51,6 +51,10 @@ enum [[nodiscard]] UtilsStatus{
     kGenericError  // For other errors.
 };
 
+struct UtilsOption {
+  bool short_output = false;
+};
+
 struct Frame {
   EnclosedWebPPicture pic;
   int timestamp;  // Ending timestamp in milliseconds.
@@ -90,9 +94,11 @@ UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
                              WebPData* const webp_data_2,
                              ThumbnailDiffPSNR* const stats);
 
-void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats);
+void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats,
+                             const UtilsOption& option);
 
-void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff);
+void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff,
+                            const UtilsOption& option);
 
 }  // namespace libwebp
 

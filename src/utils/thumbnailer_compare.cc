@@ -32,19 +32,37 @@ static bool ReadImage(const char filename[], WebPPicture* const pic) {
   return ok;
 }
 
+static void PrintHelp() {
+  std::cout << "  cwebp [options] list_filename.txt" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
+  if (argc == 1) {
+    PrintHelp();
+    return 0;
+  }
+  libwebp::UtilsOption option;
+  std::string list_filename;
+  for (int c = 1; c < argc; ++c) {
+    if (!strcmp(argv[c], "-short")) {
+      option.short_output = true;
+    } else {
+      list_filename = argv[c];
+    }
+  }
+
   // Process list of images and timestamps.
   std::vector<libwebp::Frame> frames;
-  std::ifstream input_list(argv[1]);
-  std::string filename_str;
+  std::ifstream input_list(list_filename);
+  std::string frame_filename;
   int timestamp;
-  while (input_list >> filename_str >> timestamp) {
+  while (input_list >> frame_filename >> timestamp) {
     frames.push_back(
         {EnclosedWebPPicture(new WebPPicture, WebPPictureFree), timestamp});
     WebPPicture* pic = frames.back().pic.get();
     WebPPictureInit(pic);
-    if (!ReadImage(filename_str.c_str(), pic)) {
-      std::cerr << "Failed to read image " << filename_str << std::endl;
+    if (!ReadImage(frame_filename.c_str(), pic)) {
+      std::cerr << "Failed to read image " << frame_filename << std::endl;
       return 1;
     }
   }
@@ -74,8 +92,10 @@ int main(int argc, char* argv[]) {
   // Generate new thumbnails and compare to the reference thumbnail.
   for (const libwebp::Thumbnailer::Method& method :
        libwebp::Thumbnailer::kMethodList) {
-    std::cerr << std::endl
-              << "----- Method " << method << " -----" << std::endl;
+    if (!option.short_output) {
+      std::cout << std::endl
+                << "----- Method " << method << " -----" << std::endl;
+    }
     libwebp::Thumbnailer thumbnailer;
 
     libwebp::Thumbnailer::Status status;
@@ -97,7 +117,7 @@ int main(int argc, char* argv[]) {
       libwebp::ThumbnailDiffPSNR diff;
       if (libwebp::CompareThumbnail(frames, &webp_data_ref, &webp_data,
                                     &diff) == libwebp::UtilsStatus::kOk) {
-        libwebp::PrintThumbnailDiffPSNR(diff);
+        libwebp::PrintThumbnailDiffPSNR(diff, option);
       } else {
         std::cerr << "Comparison failed." << std::endl;
       }

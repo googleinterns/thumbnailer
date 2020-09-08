@@ -143,72 +143,83 @@ UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
   return kOk;
 }
 
-void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats) {
+void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats,
+                             const UtilsOption& option) {
   if (stats.psnr.empty()) return;
-  std::cerr << std::endl;
-  std::cerr << "Frame count: " << stats.psnr.size() << std::endl;
 
-  std::cerr << std::fixed << std::showpoint;
-  std::cerr << std::setprecision(3);
+  if (option.short_output) {
+    std::cout << stats.min_psnr << ' ' << stats.max_psnr << ' '
+              << stats.mean_psnr << ' ' << stats.median_psnr << std::endl;
+    return;
+  }
+
+  std::cout << std::endl;
+  std::cout << "Frame count: " << stats.psnr.size() << std::endl;
+
+  std::cout << std::fixed << std::showpoint;
+  std::cout << std::setprecision(3);
 
   for (int i = 0; i < stats.psnr.size(); ++i) {
-    std::cerr << stats.psnr[i] << ' ';
+    std::cout << stats.psnr[i] << ' ';
   }
-  std::cerr << std::endl;
+  std::cout << std::endl;
 
-  std::cerr << std::setw(14) << std::left << "Min PSNR: " << stats.min_psnr
+  std::cout << std::setw(14) << std::left << "Min PSNR: " << stats.min_psnr
             << std::endl;
-  std::cerr << std::setw(14) << std::left << "Max PSNR: " << stats.max_psnr
+  std::cout << std::setw(14) << std::left << "Max PSNR: " << stats.max_psnr
             << std::endl;
-  std::cerr << std::setw(14) << std::left << "Mean PSNR: " << stats.mean_psnr
+  std::cout << std::setw(14) << std::left << "Mean PSNR: " << stats.mean_psnr
             << std::endl;
-  std::cerr << std::setw(14) << std::left
+  std::cout << std::setw(14) << std::left
             << "Median PSNR: " << stats.median_psnr << std::endl;
-  std::cerr << std::resetiosflags(std::ios::fixed)
+  std::cout << std::resetiosflags(std::ios::fixed)
             << std::resetiosflags(std::ios::showpoint) << std::endl;
-
-  std::cout << stats.min_psnr << ' ' << stats.max_psnr << ' ' << stats.mean_psnr
-            << ' ' << stats.median_psnr << std::endl;
 }
 
-void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff) {
+void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff,
+                            const UtilsOption& option) {
   if (diff.psnr_diff.empty()) return;
-  std::cerr << std::endl;
-  std::cerr << "Frame count: " << diff.psnr_diff.size() << std::endl;
 
-  std::cerr << std::showpos;
-  std::cerr << std::fixed << std::showpoint;
-  std::cerr << std::setprecision(3);
+  if (option.short_output) {
+    std::cout << diff.max_psnr_decrease << ' ' << diff.max_psnr_increase << ' '
+              << diff.mean_psnr_diff << ' ' << diff.median_psnr_diff
+              << std::endl;
+    return;
+  }
+
+  std::cout << std::endl;
+  std::cout << "Frame count: " << diff.psnr_diff.size() << std::endl;
+
+  std::cout << std::showpos;
+  std::cout << std::fixed << std::showpoint;
+  std::cout << std::setprecision(3);
 
   for (int i = 0; i < diff.psnr_diff.size(); ++i) {
-    std::cerr << diff.psnr_diff[i] << ' ';
+    std::cout << diff.psnr_diff[i] << ' ';
   }
-  std::cerr << std::endl;
+  std::cout << std::endl;
 
   if (diff.max_psnr_decrease > 0) {
-    std::cerr << "All frames improved in PSNR." << std::endl;
+    std::cout << "All frames improved in PSNR." << std::endl;
   } else {
-    std::cerr << std::setw(21) << std::left
+    std::cout << std::setw(21) << std::left
               << "Max PSNR decrease: " << diff.max_psnr_decrease << std::endl;
   }
 
   if (diff.max_psnr_increase < 0) {
-    std::cerr << "All frames worsened in PSNR." << std::endl;
+    std::cout << "All frames worsened in PSNR." << std::endl;
   } else {
-    std::cerr << std::setw(21) << std::left
+    std::cout << std::setw(21) << std::left
               << "Max PSNR increase: " << diff.max_psnr_increase << std::endl;
   }
 
-  std::cerr << std::setw(21) << std::left
+  std::cout << std::setw(21) << std::left
             << "Mean PSNR change: " << diff.mean_psnr_diff << std::endl;
-  std::cerr << std::setw(21) << std::left
+  std::cout << std::setw(21) << std::left
             << "Median PSNR change: " << diff.median_psnr_diff << std::endl;
-  std::cerr << std::resetiosflags(std::ios::showpos)
+  std::cout << std::resetiosflags(std::ios::showpos)
             << std::resetiosflags(std::ios::fixed)
             << std::resetiosflags(std::ios::showpoint) << std::endl;
-
-  std::cout << diff.max_psnr_decrease << ' ' << diff.max_psnr_increase << ' '
-            << diff.mean_psnr_diff << ' ' << diff.median_psnr_diff << std::endl;
 }
 
 }  // namespace libwebp
