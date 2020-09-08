@@ -32,13 +32,8 @@ static bool ReadImage(const char filename[], WebPPicture* const pic) {
   return ok;
 }
 
-static void PrintHelp() {
-  std::cout << "  cwebp [options] list_filename.txt" << std::endl;
-}
-
 int main(int argc, char* argv[]) {
   if (argc == 1) {
-    PrintHelp();
     return 0;
   }
   libwebp::UtilsOption option;
