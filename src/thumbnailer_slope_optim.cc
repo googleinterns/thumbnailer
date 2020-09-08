@@ -18,12 +18,6 @@ namespace libwebp {
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
     WebPData* const webp_data) {
-  for (auto& frame : frames_) {
-    // Initialize 'lossy_data' array.
-    std::fill(frame.lossy_data, frame.lossy_data + 101,
-              std::make_pair(-1, -1.0));
-  }
-
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
   CHECK_THUMBNAILER_STATUS(NearLosslessEqual(webp_data));
 
@@ -64,7 +58,7 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
 
       CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
 
-      if (psnr_100 - new_psnr <= 1.0) {
+      if (psnr_100 - new_psnr <= slope_dPSNR_) {
         pic_final_slope = (psnr_100 - new_psnr) / float(size_100 - new_size);
         max_quality = mid_quality - 1;
       } else {

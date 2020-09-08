@@ -28,6 +28,8 @@ Thumbnailer::Thumbnailer() {
   byte_budget_ = 153600;
   minimum_lossy_quality_ = 0;
   verbose_ = false;
+  method_ = 4;
+  slope_dPSNR_ = 1.0;
 }
 
 Thumbnailer::Thumbnailer(
@@ -38,6 +40,8 @@ Thumbnailer::Thumbnailer(
   byte_budget_ = thumbnailer_option.soft_max_size();
   minimum_lossy_quality_ = thumbnailer_option.min_lossy_quality();
   anim_config_.allow_mixed = thumbnailer_option.allow_mixed();
+  method_ = thumbnailer_option.method();
+  slope_dPSNR_ = thumbnailer_option.slope_dpsnr();
 
   // All frames are key frames.
   anim_config_.kmax = 1;
@@ -55,7 +59,13 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   WebPConfig new_config;
   if (!WebPConfigInit(&new_config)) assert(false);
   new_config.show_compressed = 1;
+  new_config.method = method_;
   frames_.push_back({pic, timestamp_ms, new_config});
+
+  // Initialize 'lossy_data' array.
+  std::fill(frames_.back().lossy_data, frames_.back().lossy_data + 101,
+            std::make_pair(-1, -1.0));
+
   return kOk;
 }
 
@@ -188,12 +198,6 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
             [](const FrameData& a, const FrameData& b) -> bool {
               return a.timestamp_ms < b.timestamp_ms;
             });
-
-  for (auto& frame : frames_) {
-    // Initialize 'lossy_data' array.
-    std::fill(frame.lossy_data, frame.lossy_data + 101,
-              std::make_pair(-1, -1.0));
-  }
 
   // Use binary search to find the quality that makes the animation fit right
   // below the given byte budget.
