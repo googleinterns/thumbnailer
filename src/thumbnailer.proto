@@ -32,4 +32,9 @@ message ThumbnailerOption {
 
   // If true, thumbnailer will print various encoding statistics.
   optional bool verbose = 8 [default = false];
+
+  // effort/speed trade-off (0=fast, 6=slower-better)
+  optional int32 method = 9 [default =  4];
+
+  optional float slope_dpsnr = 10 [default = 1.0];
 }

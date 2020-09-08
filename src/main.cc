@@ -16,6 +16,7 @@
 #include <iostream>
 #include <string>
 
+#include "../examples/example_util.h"
 #include "thumbnailer.h"
 #include "thumbnailer.pb.h"
 
@@ -46,7 +47,7 @@ int main(int argc, char* argv[]) {
     if (!strcmp(argv[c], "-verbose")) {
       thumbnailer_option.set_verbose(true);
     }
-
+    int parse_error = 0;
     // Parsing generating method.
     if (!strcmp(argv[c], "-equal_psnr")) {
       // Generate animation so that all frames have the same PSNR.
@@ -63,6 +64,8 @@ int main(int argc, char* argv[]) {
       // Generate animation with slope optimization, ignore 'try_equal_psnr'
       // and 'try_near_lossless'.
       slope_optim = true;
+    } else if (!strcmp(argv[c], "-m")) {
+      thumbnailer_option.set_method(ExUtilGetInt(argv[++c], 0, &parse_error));
     }
   }
 

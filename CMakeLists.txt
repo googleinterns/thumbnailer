@@ -21,6 +21,7 @@ add_library(imagedec STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/image_dec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/tiffdec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/webpdec.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/imageio/wicdec.c)
+
 # Find the standard image libraries.
 set(TB_DEP_IMG_LIBRARIES)
 foreach(I_LIB PNG JPEG TIFF)
@@ -32,8 +33,14 @@ foreach(I_LIB PNG JPEG TIFF)
 endforeach()
 message(STATUS "Adding ${TB_DEP_IMG_LIBRARIES} libraries.")
 
+# Example util
+add_library(example_util STATIC ${CMAKE_CURRENT_SOURCE_DIR}/examples/example_util.c)
+target_link_libraries(example_util webp imageio_util)
+target_include_directories(example_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
 target_link_libraries(imagedec
                       imageio_util
+                      example_util
                       webpmux
                       webpdemux
                       webp
