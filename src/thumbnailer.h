@@ -29,6 +29,7 @@
 
 #include "../imageio/image_dec.h"
 #include "../imageio/imageio_util.h"
+#include "../imageio/webpdec.h"
 #include "thumbnailer.pb.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
