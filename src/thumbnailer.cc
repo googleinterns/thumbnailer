@@ -79,7 +79,6 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
     return kOk;
   }
 
-  WebPPicture original_pic;
   WebPPicture encoded_pic;
   WebPMemoryWriter memory_writer;
   WebPMemoryWriterInit(&memory_writer);
@@ -95,15 +94,11 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
   if (frames_[ind].config.lossless) {
     encoded_pic.writer = WebPMemoryWrite;
     encoded_pic.custom_ptr = (void*)&memory_writer;
-  } else {
-    if (!WebPPictureCopy(&frames_[ind].pic, &original_pic)) {
-      WebPPictureFree(&original_pic);
-      return kStatsError;
-    }
   }
 
   WebPAuxStats stats;
   encoded_pic.stats = &stats;
+
   if (!WebPEncode(&frames_[ind].config, &encoded_pic)) {
     WebPPictureFree(&encoded_pic);
     return kStatsError;
@@ -111,14 +106,17 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
 
   if (frames_[ind].config.lossless) {
     if (frames_[ind].config.near_lossless == 100) {
-      // Pure lossless: image was not modified, make 'original_pic' a view
-      // of 'encoded_pic' by copying all members except the freeable pointers.
-      original_pic = encoded_pic;
-      original_pic.memory_ = original_pic.memory_argb_ = NULL;
+      // Lossless always returns PSNR 99.0, therefore, the distortion
+      // computation can be skipped in this case.
+      *pic_PSNR = 99.0;
+      *pic_size = encoded_pic.stats->coded_size;
+      WebPPictureFree(&encoded_pic);
+      WebPMemoryWriterClear(&memory_writer);
+      return kOk;
     } else {
       // Decode the bitstream stored in 'memory_writer' to get the altered
-      // image, save the 'original_pic' beforehand.
-      original_pic = encoded_pic;
+      // image.
+      WebPPicture original_pic = encoded_pic;
       if (!WebPPictureInit(&encoded_pic)) {
         return kStatsError;
       }
@@ -130,17 +128,18 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
         return kStatsError;
       }
       encoded_pic.stats = original_pic.stats;
+      original_pic.stats = NULL;
+      WebPPictureFree(&original_pic);
     }
-    original_pic.stats = NULL;
   }
 
   *pic_size = encoded_pic.stats->coded_size;
 
   float distortion_result[5];
-  if (!WebPPictureDistortion(&original_pic, &encoded_pic, 0,
+  if (!WebPPictureDistortion(&frames_[ind].pic, &encoded_pic, 0,
                              distortion_result)) {
     WebPPictureFree(&encoded_pic);
-    WebPPictureFree(&original_pic);
+    WebPMemoryWriterClear(&memory_writer);
     return kStatsError;
   } else {
     *pic_PSNR = distortion_result[4];  // PSNR-all.
@@ -150,7 +149,6 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
     frames_[ind].lossy_data[quality] = std::make_pair(*pic_size, *pic_PSNR);
   }
 
-  WebPPictureFree(&original_pic);
   WebPPictureFree(&encoded_pic);
   WebPMemoryWriterClear(&memory_writer);
 

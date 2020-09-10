@@ -14,6 +14,12 @@
 
 #include "thumbnailer.h"
 
+// List of pre-processing values used in binary search for near-lossless to
+// speed-up the algorithm. It is not necessary to binary search for all the
+// values in range [0,100] since actually for near-lossless, the frame size and
+// PSNR are not changed when the preprocessing increases a small quantity.
+const int preprocessing_list[6] = {0, 20, 40, 60, 80, 100};
+
 namespace libwebp {
 
 Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
@@ -24,12 +30,6 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     int curr_size = frame.encoded_size;
     float curr_psnr = frame.final_psnr;
 
-    // Binary search for near-lossless with the pre-processing values contained
-    // in the 'preprocessing_list' to speed-up the algorithm. It is not
-    // necessary to binary search for all the values in range [0,100]
-    // since actually for near-lossless, the frame size and PSNR are not changed
-    // when the preprocessing increases a small quantity.
-    const int preprocessing_list[6] = {0, 20, 40, 60, 80, 100};
     int min_ind = 0;
     int max_ind = 5;
     int final_near_ll = -1;
@@ -165,19 +165,13 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     return kOk;
   }
 
-  // Binary search for near-lossless with the pre-processing values contained
-  // in the 'preprocessing_list' to speed-up the algorithm. It is not
-  // necessary to binary search for all the values in range [0,100]
-  // since actually for near-lossless, the frame size and PSNR are not changed
-  // when the preprocessing increases a small quantity.
-  const int near_ll_array[5] = {20, 40, 60, 80, 100};
-  int min_ind = 0;
-  int max_ind = 4;
+  int min_ind = 1;
+  int max_ind = 5;
   int final_near_ll = 0;
   while (min_ind <= max_ind) {
     anim_size = GetAnimationSize(webp_data);
     const int mid_ind = (min_ind + max_ind) / 2;
-    const int mid_near_lossless = near_ll_array[mid_ind];
+    const int mid_near_lossless = preprocessing_list[mid_ind];
     // Vector containing pair of (new size, new psnr) for all frames in the
     // 'near_ll_frames' vector.
     std::vector<std::pair<int, float>> new_size_psnr;
@@ -222,6 +216,12 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
       *webp_data = new_webp_data;
     } else {
       WebPDataClear(&new_webp_data);
+      for (int curr_ind : near_ll_frames) {
+        frames_[curr_ind].config.near_lossless = 0;
+        CHECK_THUMBNAILER_STATUS(
+            GetPictureStats(curr_ind, &frames_[curr_ind].encoded_size,
+                            &frames_[curr_ind].final_psnr));
+      }
     }
   }
 
