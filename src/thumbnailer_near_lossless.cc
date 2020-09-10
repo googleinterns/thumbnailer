@@ -15,6 +15,11 @@
 #include "thumbnailer.h"
 
 namespace libwebp {
+// List of pre-processing values used in binary search for near-lossless to
+// speed-up the algorithm. It is not necessary to binary search for all the
+// values in range [0,100] since actually for near-lossless, the frame size and
+// PSNR are not changed when the preprocessing increases a small quantity.
+static const int kPreprocessingList[6] = {0, 20, 40, 60, 80, 100};
 
 Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
@@ -24,8 +29,8 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     int curr_size = frame.encoded_size;
     float curr_psnr = frame.final_psnr;
 
-    int min_near_ll = 0;
-    int max_near_ll = 100;
+    int min_ind = 0;
+    int max_ind = 5;
     int final_near_ll = -1;
 
     frame.config.lossless = 1;
@@ -39,8 +44,9 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     // is feasible in order to save execution time.
     if (anim_size - curr_size + new_size <= byte_budget_) {
       // Binary search for near-lossless's pre-processing value.
-      while (min_near_ll <= max_near_ll) {
-        int mid_near_ll = (min_near_ll + max_near_ll) / 2;
+      while (min_ind <= max_ind) {
+        const int mid_ind = (min_ind + max_ind) / 2;
+        const int mid_near_ll = kPreprocessingList[mid_ind];
         frame.config.near_lossless = mid_near_ll;
         CHECK_THUMBNAILER_STATUS(
             GetPictureStats(curr_ind, &new_size, &new_psnr));
@@ -55,9 +61,9 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
             curr_size = new_size;
             curr_psnr = new_psnr;
           }
-          min_near_ll = mid_near_ll + 1;
+          min_ind = mid_ind + 1;
         } else {
-          max_near_ll = mid_near_ll - 1;
+          max_ind = mid_ind - 1;
         }
       }
     }
@@ -112,6 +118,9 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
 
   // Vector of frames encoded with near-lossless preprocessing 0.
   std::vector<int> near_ll_frames;
+  // Vector storing sizes and PSNR of near-losslessly-encoded frames with
+  // preprocessing 0.
+  std::vector<std::pair<int, float>> near_ll_0_stats;
   int anim_size = GetAnimationSize(webp_data);
   // Find the maximum number of frames that can be encoded with near-lossless
   // preprocessing 0.
@@ -129,6 +138,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
         new_anim_size <= byte_budget_) {
       anim_size = new_anim_size;
       near_ll_frames.push_back(curr_ind);
+      near_ll_0_stats.push_back(std::make_pair(new_size, new_psnr));
       frames_[curr_ind].encoded_size = new_size;
       frames_[curr_ind].final_psnr = new_psnr;
       frames_[curr_ind].final_quality = 90;
@@ -136,6 +146,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     } else {
       frames_[curr_ind].config.lossless = 0;
       frames_[curr_ind].config.quality = frames_[curr_ind].final_quality;
+      if (new_anim_size > byte_budget_) break;
     }
   }
 
@@ -157,14 +168,13 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     return kOk;
   }
 
-  // Use binary search to find the highest pre-processing value to encode all
-  // frames in the 'near_ll_frames' vector.
-  int min_near_ll = 1;
-  int max_near_ll = 100;
+  int min_ind = 1;
+  int max_ind = 5;
   int final_near_ll = 0;
-  while (min_near_ll <= max_near_ll) {
+  while (min_ind <= max_ind) {
     anim_size = GetAnimationSize(webp_data);
-    int mid_near_lossless = (min_near_ll + max_near_ll) / 2;
+    const int mid_ind = (min_ind + max_ind) / 2;
+    const int mid_near_lossless = kPreprocessingList[mid_ind];
     // Vector containing pair of (new size, new psnr) for all frames in the
     // 'near_ll_frames' vector.
     std::vector<std::pair<int, float>> new_size_psnr;
@@ -186,31 +196,42 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     }
 
     if (new_size_psnr.size() == near_ll_frames.size()) {
-      CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
-      if (new_webp_data.size <= byte_budget_) {
-        WebPDataClear(webp_data);
-        *webp_data = new_webp_data;
-        for (int i = 0; i < new_size_psnr.size(); ++i) {
-          const int curr_ind = near_ll_frames[i];
-          frames_[curr_ind].encoded_size = new_size_psnr[i].first;
-          frames_[curr_ind].final_psnr = new_size_psnr[i].second;
-        }
-        final_near_ll = mid_near_lossless;
-        min_near_ll = mid_near_lossless + 1;
-      } else {
-        WebPDataClear(&new_webp_data);
-        max_near_ll = mid_near_lossless - 1;
+      final_near_ll = mid_near_lossless;
+      for (int i = 0; i < new_size_psnr.size(); ++i) {
+        const int curr_ind = near_ll_frames[i];
+        frames_[curr_ind].encoded_size = new_size_psnr[i].first;
+        frames_[curr_ind].final_psnr = new_size_psnr[i].second;
       }
+      min_ind = mid_ind + 1;
     } else {
-      max_near_ll = mid_near_lossless - 1;
+      max_ind = mid_ind - 1;
     }
   }
+
+  for (int curr_ind : near_ll_frames) {
+    frames_[curr_ind].config.near_lossless = final_near_ll;
+  }
+
+  if (final_near_ll != 0) {
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+    if (new_webp_data.size <= byte_budget_) {
+      WebPDataClear(webp_data);
+      *webp_data = new_webp_data;
+    } else {
+      WebPDataClear(&new_webp_data);
+      int ind = 0;
+      for (int curr_ind : near_ll_frames) {
+        frames_[curr_ind].config.near_lossless = 0;
+        frames_[curr_ind].encoded_size = near_ll_0_stats[ind].first;
+        frames_[curr_ind].final_psnr = near_ll_0_stats[ind].second;
+        ++ind;
+      }
+    }
+  }
+
   if (verbose_) {
     std::cout << "Final near-lossless pre-processing value: " << final_near_ll
               << std::endl;
-  }
-  for (int curr_ind : near_ll_frames) {
-    frames_[curr_ind].config.near_lossless = final_near_ll;
   }
 
   return (webp_data->size > 0) ? kOk : kByteBudgetError;
