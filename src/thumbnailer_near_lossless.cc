@@ -19,7 +19,7 @@ namespace libwebp {
 // speed-up the algorithm. It is not necessary to binary search for all the
 // values in range [0,100] since actually for near-lossless, the frame size and
 // PSNR are not changed when the preprocessing increases a small quantity.
-const int kPreprocessingList[6] = {0, 20, 40, 60, 80, 100};
+static const int kPreprocessingList[6] = {0, 20, 40, 60, 80, 100};
 
 Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   int anim_size = GetAnimationSize(webp_data);
