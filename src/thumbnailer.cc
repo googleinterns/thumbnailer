@@ -89,6 +89,9 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
     return kStatsError;
   }
 
+  // Lossy will modify the 'encoded_pic' but not lossless and near-lossless.
+  // Therefore, keep the encoded bitstream in the memory and decode it to
+  // compute PSNR correctly for near-lossless.
   if (frames_[ind].config.lossless) {
     encoded_pic.writer = WebPMemoryWrite;
     encoded_pic.custom_ptr = (void*)&memory_writer;
@@ -108,15 +111,15 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
 
   if (frames_[ind].config.lossless) {
     if (frames_[ind].config.near_lossless == 100) {
-      // Pure lossless: image was not modified, make 'original_picture' a view
-      // of 'picture' by copying all members except the freeable pointers.
+      // Pure lossless: image was not modified, make 'original_pic' a view
+      // of 'encoded_pic' by copying all members except the freeable pointers.
       original_pic = encoded_pic;
       original_pic.memory_ = original_pic.memory_argb_ = NULL;
     } else {
-      // Decode the bitstream stored in 'memory_writer' to get the altered image
-      // to 'picture'; save the 'original_picture' beforehand.
+      // Decode the bitstream stored in 'memory_writer' to get the altered
+      // image, save the 'original_pic' beforehand.
       original_pic = encoded_pic;
-      if (!WebPPictureInit(&encoded_pic)) {  // Do not free 'picture'.
+      if (!WebPPictureInit(&encoded_pic)) {
         return kStatsError;
       }
 

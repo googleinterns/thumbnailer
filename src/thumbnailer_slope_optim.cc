@@ -21,7 +21,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   CHECK_THUMBNAILER_STATUS(LossyEncodeSlopeOptim(webp_data));
   CHECK_THUMBNAILER_STATUS(NearLosslessEqual(webp_data));
 
-  // If all frames are encoded with near-lossless, lossy encode extra step will
+  // If all frames are encoded with near-lossless, lossy extra steps will
   // not be called.
   bool all_frame_near_lossless = true;
   for (int i = 0; i < frames_.size(); ++i) {

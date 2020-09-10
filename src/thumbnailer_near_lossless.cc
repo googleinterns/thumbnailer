@@ -24,7 +24,12 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     int curr_size = frame.encoded_size;
     float curr_psnr = frame.final_psnr;
 
-    const int near_ll_array[6] = {0, 20, 40, 60, 80, 100};
+    // Binary search for near-lossless with the pre-processing values contained
+    // in the 'preprocessing_list' to speed-up the algorithm. It is not
+    // necessary to binary search for all the values in range [0,100]
+    // since actually for near-lossless, the frame size and PSNR are not changed
+    // when the preprocessing increases a small quantity.
+    const int preprocessing_list[6] = {0, 20, 40, 60, 80, 100};
     int min_ind = 0;
     int max_ind = 5;
     int final_near_ll = -1;
@@ -42,7 +47,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
       // Binary search for near-lossless's pre-processing value.
       while (min_ind <= max_ind) {
         const int mid_ind = (min_ind + max_ind) / 2;
-        const int mid_near_ll = near_ll_array[mid_ind];
+        const int mid_near_ll = preprocessing_list[mid_ind];
         frame.config.near_lossless = mid_near_ll;
         CHECK_THUMBNAILER_STATUS(
             GetPictureStats(curr_ind, &new_size, &new_psnr));
@@ -160,8 +165,11 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     return kOk;
   }
 
-  // Use binary search to find the highest pre-processing value to encode all
-  // frames in the 'near_ll_frames' vector.
+  // Binary search for near-lossless with the pre-processing values contained
+  // in the 'preprocessing_list' to speed-up the algorithm. It is not
+  // necessary to binary search for all the values in range [0,100]
+  // since actually for near-lossless, the frame size and PSNR are not changed
+  // when the preprocessing increases a small quantity.
   const int near_ll_array[5] = {20, 40, 60, 80, 100};
   int min_ind = 0;
   int max_ind = 4;
@@ -181,7 +189,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
       CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
       const int new_anim_size =
           anim_size - frames_[curr_ind].encoded_size + new_size;
-      if (new_psnr > frames_[curr_ind].final_psnr &&
+      if (new_psnr >= frames_[curr_ind].final_psnr &&
           new_anim_size <= byte_budget_) {
         new_size_psnr.push_back(std::make_pair(new_size, new_psnr));
         anim_size = new_anim_size;

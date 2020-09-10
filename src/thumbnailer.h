@@ -23,7 +23,6 @@
 #include <algorithm>
 #include <cassert>
 #include <memory>
-#include <queue>
 #include <utility>
 #include <vector>
 
