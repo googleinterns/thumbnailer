@@ -60,7 +60,7 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   if (!WebPConfigInit(&new_config)) assert(false);
   new_config.show_compressed = 1;
   new_config.method = method_;
-  frames_.push_back({pic, timestamp_ms, new_config});
+  frames_.emplace_back(pic, timestamp_ms, new_config);
 
   // Initialize 'lossy_data' array.
   std::fill(frames_.back().lossy_data, frames_.back().lossy_data + 101,

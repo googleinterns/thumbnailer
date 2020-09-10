@@ -29,7 +29,7 @@
 #include "../imageio/image_dec.h"
 #include "../imageio/imageio_util.h"
 #include "../imageio/webpdec.h"
-#include "thumbnailer.pb.h"
+#include "src/thumbnailer.pb.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
 
@@ -93,6 +93,10 @@ class Thumbnailer {
     // when using lossy encoding. If WebPEncode() has not been called for
     // quality 'x', lossy_data['x'] = (-1,-1.0).
     std::pair<int, float> lossy_data[101];
+
+    FrameData(const WebPPicture& pic, int timestamp_ms,
+              const WebPConfig& config)
+        : pic(pic), timestamp_ms(timestamp_ms), config(config){};
   };
   std::vector<FrameData> frames_;
   WebPAnimEncoder* enc_ = NULL;
