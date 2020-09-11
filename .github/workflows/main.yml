@@ -31,4 +31,4 @@ jobs:
 
     # Run tests
     - name: Run tests
-      run: valgrind --leak-check=full --show-leak-kinds=all ./bazel-bin/test/thumbnailer-test
+      run: valgrind --leak-check=full --show-leak-kinds=all ./bazel-bin/test/thumbnailer_test
