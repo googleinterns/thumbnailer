@@ -104,13 +104,14 @@ class WebPTestGenerator {
 };
 
 class GenerateAnimationTest
-    : public ::testing::TestWithParam<std::tuple<int, uint8_t, bool, int>> {};
+    : public ::testing::TestWithParam<
+          std::tuple<int, uint8_t, bool, libwebp::Thumbnailer::Method>> {};
 
 TEST_P(GenerateAnimationTest, IsGenerated) {
   const int pic_count = std::get<0>(GetParam());
   const uint8_t transparency = std::get<1>(GetParam());
   const bool use_randomized = std::get<2>(GetParam());
-  const int method = std::get<3>(GetParam());
+  const libwebp::Thumbnailer::Method method = std::get<3>(GetParam());
 
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
   auto pics =
@@ -123,19 +124,18 @@ TEST_P(GenerateAnimationTest, IsGenerated) {
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
 
-  ASSERT_EQ(thumbnailer.GenerateAnimation(
-                webp_data.get(), libwebp::Thumbnailer::kMethodList[method]),
+  ASSERT_EQ(thumbnailer.GenerateAnimation(webp_data.get(), method),
             libwebp::Thumbnailer::kOk);
 
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
 }
 
-INSTANTIATE_TEST_CASE_P(ThumbnailerTest, GenerateAnimationTest,
-                        ::testing::Combine(::testing::Values(10),
-                                           ::testing::Values(0xff, 0xaf),
-                                           ::testing::Values(false, true),
-                                           ::testing::Values(0, 1, 2, 3, 4)));
+INSTANTIATE_TEST_CASE_P(
+    ThumbnailerTest, GenerateAnimationTest,
+    ::testing::Combine(::testing::Values(10), ::testing::Values(0xff, 0xaf),
+                       ::testing::Values(false, true),
+                       ::testing::ValuesIn(libwebp::Thumbnailer::kMethodList)));
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);
