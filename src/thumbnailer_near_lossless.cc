@@ -22,11 +22,11 @@ namespace libwebp {
 static const int kPreprocessingList[6] = {0, 20, 40, 60, 80, 100};
 
 Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
-  int anim_size = GetAnimationSize(webp_data);
+  size_t anim_size = GetAnimationSize(webp_data);
 
   int curr_ind = 0;
   for (auto& frame : frames_) {
-    int curr_size = frame.encoded_size;
+    size_t curr_size = frame.encoded_size;
     float curr_psnr = frame.final_psnr;
 
     int min_ind = 0;
@@ -36,7 +36,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
     frame.config.lossless = 1;
     frame.config.near_lossless = 0;
     frame.config.quality = 90;
-    int new_size;
+    size_t new_size;
     float new_psnr;
     CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
 
@@ -121,7 +121,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
   // Vector storing sizes and PSNR of near-losslessly-encoded frames with
   // preprocessing 0.
   std::vector<std::pair<int, float>> near_ll_0_stats;
-  int anim_size = GetAnimationSize(webp_data);
+  size_t anim_size = GetAnimationSize(webp_data);
   // Find the maximum number of frames that can be encoded with near-lossless
   // preprocessing 0.
   for (int i = 0; i < num_frames; ++i) {
@@ -129,10 +129,10 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     frames_[curr_ind].config.lossless = 1;
     frames_[curr_ind].config.quality = 90;
     frames_[curr_ind].config.near_lossless = 0;
-    int new_size;
+    size_t new_size;
     float new_psnr;
     CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
-    const int new_anim_size =
+    const size_t new_anim_size =
         anim_size - frames_[curr_ind].encoded_size + new_size;
     if (new_psnr >= frames_[curr_ind].final_psnr &&
         new_anim_size <= byte_budget_) {
@@ -177,14 +177,14 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
     const int mid_near_lossless = kPreprocessingList[mid_ind];
     // Vector containing pair of (new size, new psnr) for all frames in the
     // 'near_ll_frames' vector.
-    std::vector<std::pair<int, float>> new_size_psnr;
+    std::vector<std::pair<size_t, float>> new_size_psnr;
 
     for (int curr_ind : near_ll_frames) {
       frames_[curr_ind].config.near_lossless = mid_near_lossless;
-      int new_size;
+      size_t new_size;
       float new_psnr;
       CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
-      const int new_anim_size =
+      const size_t new_anim_size =
           anim_size - frames_[curr_ind].encoded_size + new_size;
       if (new_psnr >= frames_[curr_ind].final_psnr &&
           new_anim_size <= byte_budget_) {
@@ -197,7 +197,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
 
     if (new_size_psnr.size() == near_ll_frames.size()) {
       final_near_ll = mid_near_lossless;
-      for (int i = 0; i < new_size_psnr.size(); ++i) {
+      for (std::size_t i = 0; i < new_size_psnr.size(); ++i) {
         const int curr_ind = near_ll_frames[i];
         frames_[curr_ind].encoded_size = new_size_psnr[i].first;
         frames_[curr_ind].final_psnr = new_size_psnr[i].second;

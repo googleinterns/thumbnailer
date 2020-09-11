@@ -90,7 +90,7 @@ class Thumbnailer {
     WebPPicture pic;
     int timestamp_ms;  // Ending timestamp in milliseconds.
     WebPConfig config;
-    int encoded_size;
+    size_t encoded_size;
     int final_quality = -1;
     float final_psnr;
     bool near_lossless = false;
@@ -107,7 +107,7 @@ class Thumbnailer {
   WebPAnimEncoder* enc_ = NULL;
   WebPAnimEncoderOptions anim_config_;
   int loop_count_;
-  int byte_budget_;
+  size_t byte_budget_;
   int minimum_lossy_quality_;
   bool verbose_;
   int method_;
@@ -115,7 +115,8 @@ class Thumbnailer {
 
   // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
   // size and PSNR will be stored in '*pic_size' and '*pic_PSNR' respectively.
-  Status GetPictureStats(int ind, int* const pic_size, float* const pic_PSNR);
+  Status GetPictureStats(int ind, size_t* const pic_size,
+                         float* const pic_PSNR);
 
   Status SetLoopCount(WebPData* const webp_data);
 
@@ -180,7 +181,7 @@ class Thumbnailer {
   Status ExtraLossyEncode(WebPData* const webp_data);
 
   // Returns animation size (in bytes).
-  int GetAnimationSize(WebPData* const webp_data);
+  size_t GetAnimationSize(WebPData* const webp_data);
 };
 
 }  // namespace libwebp

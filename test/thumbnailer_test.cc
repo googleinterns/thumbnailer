@@ -79,8 +79,8 @@ class WebPTestGenerator {
   int pic_count_;
   int width_;
   int height_;
-  bool randomized_;
   uint8_t transparency_;
+  bool randomized_;
 
   // Returns RGBA values for WebPPicture.
   std::vector<uint8_t> GenerateRGBA(int seed) {

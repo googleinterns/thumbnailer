@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
     }
     libwebp::Thumbnailer thumbnailer;
 
-    libwebp::Thumbnailer::Status status;
+    libwebp::Thumbnailer::Status status = libwebp::Thumbnailer::Status::kOk;
     for (const libwebp::Frame& frame : frames) {
       status = thumbnailer.AddFrame(*frame.pic, frame.timestamp);
       if (status != libwebp::Thumbnailer::Status::kOk) {
