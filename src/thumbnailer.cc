@@ -191,6 +191,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data,
     return GenerateAnimationEqualPSNR(webp_data);
   } else if (method == kSlopeOptim) {
     return GenerateAnimationSlopeOptim(webp_data);
+  } else if (method == kNearllDiff) {
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationEqualQuality(webp_data));
+    return NearLosslessDiff(webp_data);
+  } else if (method == kNearllEqual) {
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationEqualQuality(webp_data));
+    return NearLosslessEqual(webp_data);
   } else {
     std::cerr << "Invalid method." << std::endl;
     return kGenericError;

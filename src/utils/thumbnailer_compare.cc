@@ -77,7 +77,8 @@ int main(int argc, char* argv[]) {
   }
   WebPData webp_data_ref;
   WebPDataInit(&webp_data_ref);
-  if (thumbnailer_ref.GenerateAnimationEqualQuality(&webp_data_ref) !=
+  if (thumbnailer_ref.GenerateAnimation(
+          &webp_data_ref, libwebp::Thumbnailer::Method::kEqualQuality) !=
       libwebp::Thumbnailer::Status::kOk) {
     std::cerr << "Error generating reference thumbnail." << std::endl;
     WebPDataClear(&webp_data_ref);
