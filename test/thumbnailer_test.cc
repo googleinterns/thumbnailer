@@ -103,15 +103,14 @@ class WebPTestGenerator {
   }
 };
 
-class GenerateAnimationTest : public ::testing::TestWithParam<
-                                  std::tuple<int, uint8_t, bool, bool, int>> {};
+class GenerateAnimationTest
+    : public ::testing::TestWithParam<std::tuple<int, uint8_t, bool, int>> {};
 
 TEST_P(GenerateAnimationTest, IsGenerated) {
   const int pic_count = std::get<0>(GetParam());
   const uint8_t transparency = std::get<1>(GetParam());
   const bool use_randomized = std::get<2>(GetParam());
-  const bool equal_psnr = std::get<3>(GetParam());
-  const int try_near_lossless = std::get<4>(GetParam());
+  const int method = std::get<3>(GetParam());
 
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
   auto pics =
@@ -124,21 +123,9 @@ TEST_P(GenerateAnimationTest, IsGenerated) {
                                                            WebPDataDelete);
   WebPDataInit(webp_data.get());
 
-  if (equal_psnr) {
-    ASSERT_EQ(thumbnailer.GenerateAnimationEqualPSNR(webp_data.get()),
-              libwebp::Thumbnailer::kOk);
-  } else {
-    ASSERT_EQ(thumbnailer.GenerateAnimation(webp_data.get()),
-              libwebp::Thumbnailer::kOk);
-  }
-
-  if (try_near_lossless == 1) {
-    ASSERT_EQ(thumbnailer.NearLosslessDiff(webp_data.get()),
-              libwebp::Thumbnailer::kOk);
-  } else if (try_near_lossless == 2) {
-    ASSERT_EQ(thumbnailer.NearLosslessEqual(webp_data.get()),
-              libwebp::Thumbnailer::kOk);
-  }
+  ASSERT_EQ(thumbnailer.GenerateAnimation(
+                webp_data.get(), libwebp::Thumbnailer::kMethodList[method]),
+            libwebp::Thumbnailer::kOk);
 
   EXPECT_LE(webp_data->size, kDefaultBudget);
   EXPECT_GT(webp_data->size, 0);
@@ -148,39 +135,7 @@ INSTANTIATE_TEST_CASE_P(ThumbnailerTest, GenerateAnimationTest,
                         ::testing::Combine(::testing::Values(10),
                                            ::testing::Values(0xff, 0xaf),
                                            ::testing::Values(false, true),
-                                           ::testing::Values(false, true),
-                                           ::testing::Values(0, 1, 2)));
-
-class SlopeOptimTest
-    : public ::testing::TestWithParam<std::tuple<int, uint8_t, bool>> {};
-
-TEST_P(SlopeOptimTest, IsGenerated) {
-  const int pic_count = std::get<0>(GetParam());
-  const uint8_t transparency = std::get<1>(GetParam());
-  const bool use_randomized = std::get<2>(GetParam());
-
-  libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
-  auto pics =
-      WebPTestGenerator(pic_count, transparency, use_randomized).GeneratePics();
-  for (int i = 0; i < pic_count; ++i) {
-    ASSERT_EQ(thumbnailer.AddFrame(*pics[i], i * 500),
-              libwebp::Thumbnailer::kOk);
-  }
-  std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
-                                                           WebPDataDelete);
-  WebPDataInit(webp_data.get());
-
-  ASSERT_EQ(thumbnailer.GenerateAnimationSlopeOptim(webp_data.get()),
-            libwebp::Thumbnailer::kOk);
-
-  EXPECT_LE(webp_data->size, kDefaultBudget);
-  EXPECT_GT(webp_data->size, 0);
-}
-
-INSTANTIATE_TEST_CASE_P(ThumbnailerTest, SlopeOptimTest,
-                        ::testing::Combine(::testing::Values(10),
-                                           ::testing::Values(0xff, 0xaf),
-                                           ::testing::Values(false, true)));
+                                           ::testing::Values(0, 1, 2, 3, 4)));
 
 int main(int argc, char* argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

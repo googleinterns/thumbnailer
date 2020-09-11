@@ -39,9 +39,10 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
   thumbnailer::ThumbnailerOption thumbnailer_option;
 
-  bool try_equal_psnr = false;
-  int try_near_lossless = -1;
-  bool slope_optim = false;
+  // Method generating thumbnail, the default method is using lossy encode and
+  // imposing the same quality to all frames.
+  libwebp::Thumbnailer::Method method =
+      libwebp::Thumbnailer::Method::kEqualQuality;
 
   for (int c = 3; c < argc; c++) {
     if (!strcmp(argv[c], "-verbose")) {
@@ -51,19 +52,19 @@ int main(int argc, char* argv[]) {
     // Parsing generating method.
     if (!strcmp(argv[c], "-equal_psnr")) {
       // Generate animation so that all frames have the same PSNR.
-      try_equal_psnr = true;
+      method = libwebp::Thumbnailer::Method::kEqualPSNR;
     } else if (!strcmp(argv[c], "-near_ll_diff")) {
       // Generate animation allowing near-lossless method. The pre-processing
       // value for each near-lossless frames can be different.
-      try_near_lossless = 0;
+      method = libwebp::Thumbnailer::Method::kNearllDiff;
     } else if (!strcmp(argv[c], "-near_ll_equal")) {
       // Generate animation allowing near-lossless method. Use the same
       // pre-processing value for all near-lossless frames.
-      try_near_lossless = 1;
+      method = libwebp::Thumbnailer::Method::kNearllEqual;
     } else if (!strcmp(argv[c], "-slope_optim")) {
       // Generate animation with slope optimization, ignore 'try_equal_psnr'
       // and 'try_near_lossless'.
-      slope_optim = true;
+      method = libwebp::Thumbnailer::Method::kSlopeOptim;
     } else if (!strcmp(argv[c], "-m")) {
       // Effort/speed trade-off (0=fast, 6=slower-better), default value 4.
       thumbnailer_option.set_method(ExUtilGetInt(argv[++c], 0, &parse_error));
@@ -72,6 +73,7 @@ int main(int argc, char* argv[]) {
       thumbnailer_option.set_slope_dpsnr(
           ExUtilGetFloat(argv[++c], &parse_error));
     }
+
     if (parse_error) {
       std::cerr << "Error parsing options." << std::endl;
       return 1;
@@ -113,22 +115,8 @@ int main(int argc, char* argv[]) {
   WebPData webp_data;
   WebPDataInit(&webp_data);
 
-  libwebp::Thumbnailer::Status status;
-  if (slope_optim) {
-    status = thumbnailer.GenerateAnimationSlopeOptim(&webp_data);
-  } else {
-    if (try_equal_psnr) {
-      status = thumbnailer.GenerateAnimationEqualPSNR(&webp_data);
-    } else {
-      status = thumbnailer.GenerateAnimationEqualQuality(&webp_data);
-    }
-
-    if (status == libwebp::Thumbnailer::Status::kOk && try_near_lossless == 0) {
-      status = thumbnailer.NearLosslessDiff(&webp_data);
-    } else if (try_near_lossless == 1) {
-      status = thumbnailer.NearLosslessEqual(&webp_data);
-    }
-  }
+  libwebp::Thumbnailer::Status status =
+      thumbnailer.GenerateAnimation(&webp_data, method);
 
   // Write animation to file.
   if (status == libwebp::Thumbnailer::Status::kOk) {

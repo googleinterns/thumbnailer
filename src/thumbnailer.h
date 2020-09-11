@@ -62,9 +62,15 @@ class Thumbnailer {
       kGenericError      // For other errors.
   };
 
-  enum Method { kEqualQuality = 0, kEqualPSNR, kSlopeOptim };
-  static constexpr Method kMethodList[] = {kEqualQuality, kEqualPSNR,
-                                           kSlopeOptim};
+  enum Method {
+    kEqualQuality = 0,
+    kEqualPSNR,
+    kNearllEqual,
+    kNearllDiff,
+    kSlopeOptim
+  };
+  static constexpr Method kMethodList[] = {
+      kEqualQuality, kEqualPSNR, kNearllEqual, kNearllDiff, kSlopeOptim};
 
   // Adds a frame with a timestamp (in millisecond). The 'pic' argument must
   // outlive the last GenerateAnimation() call.
@@ -73,6 +79,36 @@ class Thumbnailer {
   // Generates the animation using the specified method.
   Status GenerateAnimation(WebPData* const webp_data,
                            Method method = kEqualQuality);
+
+ private:
+  struct FrameData {
+    WebPPicture pic;
+    int timestamp_ms;  // Ending timestamp in milliseconds.
+    WebPConfig config;
+    int encoded_size;
+    int final_quality = -1;
+    float final_psnr;
+    bool near_lossless = false;
+    // Array containing pairs of (size, psnr) for qualities in range [0..100]
+    // when using lossy encoding. If WebPEncode() has not been called for
+    // quality 'x', lossy_data['x'] = (-1,-1.0).
+    std::pair<int, float> lossy_data[101];
+  };
+  std::vector<FrameData> frames_;
+  WebPAnimEncoder* enc_ = NULL;
+  WebPAnimEncoderOptions anim_config_;
+  int loop_count_;
+  int byte_budget_;
+  int minimum_lossy_quality_;
+  bool verbose_;
+  int method_;
+  float slope_dPSNR_;
+
+  // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
+  // size and PSNR will be stored in '*pic_size' and '*pic_PSNR' respectively.
+  Status GetPictureStats(int ind, int* const pic_size, float* const pic_PSNR);
+
+  Status SetLoopCount(WebPData* const webp_data);
 
   // Generates the animation with given config for each frame.
   Status GenerateAnimationNoBudget(WebPData* const webp_data);
@@ -106,36 +142,6 @@ class Thumbnailer {
   // Either lossy and near-lossless compression modes will be used for each
   // frame.
   Status GenerateAnimationSlopeOptim(WebPData* const webp_data);
-
- private:
-  struct FrameData {
-    WebPPicture pic;
-    int timestamp_ms;  // Ending timestamp in milliseconds.
-    WebPConfig config;
-    int encoded_size;
-    int final_quality = -1;
-    float final_psnr;
-    bool near_lossless = false;
-    // Array containing pairs of (size, psnr) for qualities in range [0..100]
-    // when using lossy encoding. If WebPEncode() has not been called for
-    // quality 'x', lossy_data['x'] = (-1,-1.0).
-    std::pair<int, float> lossy_data[101];
-  };
-  std::vector<FrameData> frames_;
-  WebPAnimEncoder* enc_ = NULL;
-  WebPAnimEncoderOptions anim_config_;
-  int loop_count_;
-  int byte_budget_;
-  int minimum_lossy_quality_;
-  bool verbose_;
-  int method_;
-  float slope_dPSNR_;
-
-  // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
-  // size and PSNR will be stored in '*pic_size' and '*pic_PSNR' respectively.
-  Status GetPictureStats(int ind, int* const pic_size, float* const pic_PSNR);
-
-  Status SetLoopCount(WebPData* const webp_data);
 
   // For each frame, finds the leftmost point on the RD-curve (for lossy
   // encoding) so that the difference in PSNR between this point and the last
