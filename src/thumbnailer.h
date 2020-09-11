@@ -29,9 +29,14 @@
 #include "../imageio/image_dec.h"
 #include "../imageio/imageio_util.h"
 #include "../imageio/webpdec.h"
-#include "src/thumbnailer.pb.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
+
+#ifdef THUMBNAILER_CMAKE
+#include "thumbnailer.pb.h"
+#else
+#include "src/thumbnailer.pb.h"
+#endif
 
 #define CHECK_THUMBNAILER_STATUS(status)    \
   do {                                      \

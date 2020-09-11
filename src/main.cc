@@ -17,7 +17,6 @@
 #include <string>
 
 #include "../examples/example_util.h"
-#include "src/thumbnailer.pb.h"
 #include "thumbnailer.h"
 
 // Returns true on success and false on failure.
