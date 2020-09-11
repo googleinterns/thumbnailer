@@ -18,10 +18,7 @@ cc_library(
     name = "example_util",
     srcs = ["example_util.c"],
     hdrs = ["example_util.h"],
-    visibility = [
-        "//imageio:__pkg__",
-        "//src:__pkg__",
-    ],
+    visibility = ["//visibility:public"],
     deps = ["//imageio:imageio_util"],
 )
 

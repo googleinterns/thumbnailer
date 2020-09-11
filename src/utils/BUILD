@@ -12,13 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@rules_cc//cc:defs.bzl", "cc_binary")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+cc_library(
+    name = "thumbnailer_utils",
+    srcs = ["thumbnailer_utils.cc"],
+    hdrs = ["thumbnailer_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//imageio:imagedec",
+    ],
+)
 
 cc_binary(
-    name = "thumbnailer_test",
-    srcs = ["thumbnailer_test.cc"],
+    name = "thumbnailer_compare",
+    srcs = ["thumbnailer_compare.cc"],
     deps = [
+        ":thumbnailer_utils",
         "//src:thumbnailer_lib",
-        "@gtest",
     ],
 )

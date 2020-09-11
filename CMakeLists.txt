@@ -61,7 +61,7 @@ add_library(thumbnailer_lib
             ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_slope_optim.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_near_lossless.cc
             ${PROTO_SRCS})
-target_compile_definitions(thumbnailer_lib PUBLIC THUMBNAILER_CMAKE)
+target_compile_definitions(thumbnailer_lib PUBLIC THUMBNAILER_USE_CMAKE)
 target_include_directories(thumbnailer_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 
@@ -69,7 +69,7 @@ add_executable(thumbnailer ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 target_link_libraries(thumbnailer thumbnailer_lib imagedec)
 
 add_library(thumbnailer_utils_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/thumbnailer_utils.cc)
-target_link_libraries(thumbnailer_utils_lib webp imagedec)
+target_link_libraries(thumbnailer_utils_lib imagedec)
 
 add_executable(thumbnailer_compare ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/thumbnailer_compare.cc)
 target_link_libraries(thumbnailer_compare thumbnailer_utils_lib thumbnailer_lib)

@@ -32,7 +32,7 @@
 #include "webp/encode.h"
 #include "webp/mux.h"
 
-#ifdef THUMBNAILER_CMAKE
+#ifdef THUMBNAILER_USE_CMAKE
 #include "thumbnailer.pb.h"
 #else
 #include "src/thumbnailer.pb.h"

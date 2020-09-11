@@ -51,7 +51,7 @@ cc_library(
         "-DWEBP_HAVE_JPEG",
         "-DWEBP_HAVE_TIFF",
     ],
-    visibility = ["//src:__pkg__"],
+    visibility = ["//visibility:public"],
     deps = [
         ":imageio_util",
         "//examples:example_util",
