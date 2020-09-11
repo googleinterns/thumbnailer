@@ -24,7 +24,7 @@ jobs:
 
     # Build the code
     - name: Build
-      run: bazel build "//src:thumbnailer" && bazel build "//src/utils/thumbnailer_compare"
+      run: bazel build "//src:thumbnailer" && bazel build "//src/utils:thumbnailer_compare"
     
     - name: Build tests
       run: bazel build "//test:thumbnailer_test"
