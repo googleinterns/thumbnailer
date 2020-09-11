@@ -32,11 +32,6 @@ foreach(I_LIB PNG JPEG TIFF)
 endforeach()
 message(STATUS "Adding ${TB_DEP_IMG_LIBRARIES} libraries.")
 
-
-# Example util
-add_library(example_util STATIC ${CMAKE_CURRENT_SOURCE_DIR}/examples/example_util.c)
-target_link_libraries(example_util webp)
-
 target_link_libraries(imagedec
                       imageio_util
                       example_util
@@ -47,6 +42,10 @@ target_link_libraries(imagedec
 
 add_library(imageenc STATIC ${CMAKE_CURRENT_SOURCE_DIR}/imageio/image_enc.c)
 target_link_libraries(imageenc imageio_util webp)
+
+# Example util.
+add_library(example_util STATIC ${CMAKE_CURRENT_SOURCE_DIR}/examples/example_util.c)
+target_link_libraries(example_util webp)
 
 # Thumbnailer library.
 find_package(Protobuf)
@@ -62,6 +61,7 @@ add_library(thumbnailer_lib
             ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_slope_optim.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/src/thumbnailer_near_lossless.cc
             ${PROTO_SRCS})
+target_compile_definitions(thumbnailer_lib PUBLIC THUMBNAILER_USE_CMAKE)
 target_include_directories(thumbnailer_lib PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_link_libraries(thumbnailer_lib protobuf::libprotobuf webp)
 
@@ -69,7 +69,7 @@ add_executable(thumbnailer ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 target_link_libraries(thumbnailer thumbnailer_lib imagedec)
 
 add_library(thumbnailer_utils_lib ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/thumbnailer_utils.cc)
-target_link_libraries(thumbnailer_utils_lib webp imagedec)
+target_link_libraries(thumbnailer_utils_lib imagedec)
 
 add_executable(thumbnailer_compare ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/thumbnailer_compare.cc)
 target_link_libraries(thumbnailer_compare thumbnailer_utils_lib thumbnailer_lib)

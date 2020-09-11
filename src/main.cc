@@ -18,7 +18,6 @@
 
 #include "../examples/example_util.h"
 #include "thumbnailer.h"
-#include "thumbnailer.pb.h"
 
 // Returns true on success and false on failure.
 static bool ReadImage(const char filename[], WebPPicture* const pic) {

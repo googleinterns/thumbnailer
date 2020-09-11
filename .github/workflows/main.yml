@@ -20,13 +20,15 @@ jobs:
 
     # Install dependencies
     - name: Install dependencies
-      run: sudo apt install cmake g++ libjpeg-dev libpng-dev libprotobuf-dev libwebp-dev libgtest-dev ninja-build protobuf-compiler valgrind
+      run: sudo apt-get install bazel clang valgrind unzip zip libwebp-dev
 
     # Build the code
     - name: Build
-      run: |
-        mkdir build && cd build && cmake -G "Ninja" ../ && ninja 
+      run: bazel build --compilation_mode=opt "//src:thumbnailer"
     
+    - name: Build tests
+      run: bazel build --compilation_mode=opt "//test:thumbnailer_test"
+
     # Run tests
     - name: Run tests
-      run: valgrind --leak-check=full --show-leak-kinds=all ./build/test/test_thumbnailer
+      run: valgrind --leak-check=full --show-leak-kinds=all ./bazel-bin/test/thumbnailer_test

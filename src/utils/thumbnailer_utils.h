@@ -28,8 +28,8 @@
 #include <utility>
 #include <vector>
 
-#include "../imageio/image_dec.h"
-#include "../imageio/imageio_util.h"
+#include "../../imageio/image_dec.h"
+#include "../../imageio/imageio_util.h"
 #include "webp/demux.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
