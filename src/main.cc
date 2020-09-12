@@ -18,6 +18,7 @@
 
 #include "../examples/example_util.h"
 #include "thumbnailer.h"
+#include "utils/thumbnailer_utils.h"
 
 // Returns true on success and false on failure.
 static bool ReadImage(const char filename[], WebPPicture* const pic) {
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]) {
   int timestamp_ms;
 
   while (input_list >> filename_str >> timestamp_ms) {
-    pics.emplace_back(new WebPPicture, WebPPictureFree);
+    pics.emplace_back(new WebPPicture, libwebp::WebPPictureDelete);
     WebPPicture* current_frame = pics.back().get();
     WebPPictureInit(current_frame);
 

@@ -76,6 +76,10 @@ struct ThumbnailDiffPSNR {
   float median_psnr_diff;
 };
 
+void WebPPictureDelete(WebPPicture* picture);
+
+void WebPDataDelete(WebPData* webp_data);
+
 // Converts WebPData (animation) into Frame(s).
 UtilsStatus AnimData2Frames(WebPData* const webp_data,
                             std::vector<Frame>* const pics);

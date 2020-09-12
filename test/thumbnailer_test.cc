@@ -16,21 +16,12 @@
 
 #include <random>
 
+#include "../src/utils/thumbnailer_utils.h"
 #include "gtest/gtest.h"
 
 const int kDefaultWidth = 160;
 const int kDefaultHeight = 90;
 const int kDefaultBudget = 153600;  // 150 kB
-
-void WebPPictureDelete(WebPPicture* picture) {
-  WebPPictureFree(picture);
-  delete picture;
-}
-
-void WebPDataDelete(WebPData* webp_data) {
-  WebPDataClear(webp_data);
-  delete webp_data;
-}
 
 class WebPTestGenerator {
  public:
@@ -64,7 +55,7 @@ class WebPTestGenerator {
   GeneratePics() {
     std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
     for (int i = 0; i < pic_count_; ++i) {
-      pics.emplace_back(new WebPPicture, WebPPictureDelete);
+      pics.emplace_back(new WebPPicture, libwebp::WebPPictureDelete);
       auto& pic = pics.back();
       WebPPictureInit(pic.get());
       pic->use_argb = 1;
@@ -120,8 +111,8 @@ TEST_P(GenerateAnimationTest, IsGenerated) {
     ASSERT_EQ(thumbnailer.AddFrame(*pics[i], i * 500),
               libwebp::Thumbnailer::kOk);
   }
-  std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(new WebPData,
-                                                           WebPDataDelete);
+  std::unique_ptr<WebPData, void (*)(WebPData*)> webp_data(
+      new WebPData, libwebp::WebPDataDelete);
   WebPDataInit(webp_data.get());
 
   ASSERT_EQ(thumbnailer.GenerateAnimation(webp_data.get(), method),
