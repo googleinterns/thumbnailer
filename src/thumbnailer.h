@@ -90,9 +90,9 @@ class Thumbnailer {
     WebPPicture pic;
     int timestamp_ms;  // Ending timestamp in milliseconds.
     WebPConfig config;
-    size_t encoded_size;
+    size_t encoded_size = 0;
     int final_quality = -1;
-    float final_psnr;
+    float final_psnr = 0.0;
     bool near_lossless = false;
     // Array containing pairs of (size, psnr) for qualities in range [0..100]
     // when using lossy encoding. If WebPEncode() has not been called for
