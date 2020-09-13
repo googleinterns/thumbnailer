@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -23,7 +25,24 @@
 #include "thumbnailer.h"
 #include "utils/thumbnailer_utils.h"
 
+ABSL_FLAG(std::string, o, "out.webp", "Output file name.");
+
+// Thumbnailer options.
+ABSL_FLAG(uint32_t, soft_max_size, 153600,
+          "Desired (soft) maximum size limit in bytes.");
+ABSL_FLAG(uint32_t, loop_count, 0, "Number of times animation will loop.");
+ABSL_FLAG(uint32_t, min_lossy_quality, 0,
+          "Minimum lossy quality to be used for encoding each frame.");
+ABSL_FLAG(uint32_t, hard_max_size, 153600,
+          "Hard limit for maximum file size. If it is less than "
+          "'soft_max_size', it will be set to 'soft_max_size'.");
+ABSL_FLAG(bool, allow_mixed, false, "Use mixed lossy/lossless compression.");
 ABSL_FLAG(bool, verbose, false, "Print various encoding statistics.");
+ABSL_FLAG(uint32_t, m, 4, "Effort/speed trade-off (0=fast, 6=slower-better).");
+ABSL_FLAG(float, slope_dpsnr, 1.0,
+          "Maximum PSNR change used in slope optimization.");
+
+// Thumbnailer methods.
 ABSL_FLAG(bool, equal_psnr, false,
           "Generate animation so that all frames have the same PSNR.");
 ABSL_FLAG(
@@ -35,52 +54,43 @@ ABSL_FLAG(bool, near_ll_equal, false,
           "pre-processing value for all near-lossless frames.");
 ABSL_FLAG(bool, slope_optim, false,
           "Generate animation with slope optimization.");
-ABSL_FLAG(int, m, 4,
-          "Effort/speed trade-off (0=fast, 6=slower-better), default value 4.");
-ABSL_FLAG(float, slope_dpsnr, 1.0,
-          "Maximum PSNR change used in slope optimization, default value 1.0.");
-ABSL_FLAG(std::string, o, "out.webp", "Output file name.");
 
-// Returns true on success and false on failure.
-static bool ReadImage(const char filename[], WebPPicture* const pic) {
-  const uint8_t* data = NULL;
-  size_t data_size = 0;
-  if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
-
-  pic->use_argb = 1;  // force ARGB.
-
-  WebPImageReader reader = WebPGuessImageReader(data, data_size);
-  bool ok = reader(data, data_size, pic, 1, NULL);
-  free((void*)data);
-
-  return ok;
+// Returns false on invalid configurations.
+bool ThumbnailerValidateOption(
+    const thumbnailer::ThumbnailerOption& thumbnailer_option) {
+  if (thumbnailer_option.min_lossy_quality() > 100) return false;
+  if (thumbnailer_option.webp_method() > 6) return false;
+  return true;
 }
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  absl::SetProgramUsageMessage(
-      absl::StrFormat("usage: %s %s", argv[0], "frame_list.txt"));
+  absl::SetProgramUsageMessage(absl::StrFormat(
+      "Usage: %s [options] %s -o=output.webp", argv[0], "frame_list.txt"));
   absl::ParseCommandLine(argc, argv);
 
-  // Parsing thumbnailer options.
+  // Parse thumbnailer options.
   thumbnailer::ThumbnailerOption thumbnailer_option;
-  if (absl::GetFlag(FLAGS_verbose)) thumbnailer_option.set_verbose(true);
 
-  const int webp_method = absl::GetFlag(FLAGS_m);
-  if (webp_method < 0 || webp_method > 6) {
-    std::cerr << "Invalid -m value." << std::endl;
+  thumbnailer_option.set_soft_max_size(absl::GetFlag(FLAGS_soft_max_size));
+  thumbnailer_option.set_loop_count(absl::GetFlag(FLAGS_loop_count));
+  thumbnailer_option.set_min_lossy_quality(
+      absl::GetFlag(FLAGS_min_lossy_quality));
+  thumbnailer_option.set_hard_max_size(std::max(
+      absl::GetFlag(FLAGS_hard_max_size), thumbnailer_option.soft_max_size()));
+  thumbnailer_option.set_allow_mixed(absl::GetFlag(FLAGS_allow_mixed));
+  thumbnailer_option.set_verbose(absl::GetFlag(FLAGS_verbose));
+  thumbnailer_option.set_webp_method(absl::GetFlag(FLAGS_m));
+  thumbnailer_option.set_slope_dpsnr(
+      std::abs(absl::GetFlag(FLAGS_slope_dpsnr)));
+
+  if (!ThumbnailerValidateOption(thumbnailer_option)) {
+    std::cerr << "Invalid thumbnailer configuration." << std::endl;
     return 1;
   }
-  thumbnailer_option.set_method(webp_method);
 
-  const float slope_dpsnr = absl::GetFlag(FLAGS_slope_dpsnr);
-  if (slope_dpsnr < 0) {
-    std::cerr << "Invalid -dpsnr value." << std::endl;
-    return 1;
-  }
-  thumbnailer_option.set_slope_dpsnr(slope_dpsnr);
-
+  // Initialize thumbnailer.
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer(thumbnailer_option);
 
   // Process list of images and timestamps.
@@ -97,22 +107,20 @@ int main(int argc, char* argv[]) {
 
   std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
   std::ifstream input_list(argv[input_list_c]);
-  std::string filename_str;
+  std::string filename;
   int timestamp_ms;
 
-  while (input_list >> filename_str >> timestamp_ms) {
+  while (input_list >> filename >> timestamp_ms) {
     pics.emplace_back(new WebPPicture, libwebp::WebPPictureDelete);
     WebPPicture* current_frame = pics.back().get();
     WebPPictureInit(current_frame);
-
-    if (!ReadImage(filename_str.c_str(), current_frame)) {
-      std::cerr << "Failed to read image " << filename_str << std::endl;
+    if (!libwebp::ReadPicture(filename.c_str(), current_frame)) {
+      std::cerr << "Failed to read image " << filename << std::endl;
       return 1;
     }
-
     if (thumbnailer.AddFrame(*current_frame, timestamp_ms) !=
         libwebp::Thumbnailer::Status::kOk) {
-      std::cerr << "Error adding frame " << filename_str << std::endl;
+      std::cerr << "Error adding frame " << filename << std::endl;
       return 1;
     }
   }
@@ -122,12 +130,12 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  // Generate animation.
+  // Generate the animation.
   const std::string& output = absl::GetFlag(FLAGS_o);
   WebPData webp_data;
   WebPDataInit(&webp_data);
 
-  // By default, use lossy encode and imposing the same quality to all frames.
+  // By default, use lossy encoding and impose the same quality to all frames.
   libwebp::Thumbnailer::Method method =
       libwebp::Thumbnailer::Method::kEqualQuality;
 

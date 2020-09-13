@@ -16,6 +16,20 @@
 
 namespace libwebp {
 
+// Returns true on success and false on failure.
+bool ReadPicture(const char filename[], WebPPicture* const pic) {
+  const uint8_t* data = NULL;
+  size_t data_size = 0;
+  if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
+
+  pic->use_argb = 1;  // force ARGB.
+
+  WebPImageReader reader = WebPGuessImageReader(data, data_size);
+  bool ok = reader(data, data_size, pic, 1, NULL);
+  free((void*)data);
+  return ok;
+}
+
 void WebPPictureDelete(WebPPicture* picture) {
   WebPPictureFree(picture);
   delete picture;

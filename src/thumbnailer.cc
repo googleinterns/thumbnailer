@@ -28,7 +28,7 @@ Thumbnailer::Thumbnailer() {
   byte_budget_ = 153600;
   minimum_lossy_quality_ = 0;
   verbose_ = false;
-  method_ = 4;
+  webp_method_ = 4;
   slope_dPSNR_ = 1.0;
 }
 
@@ -40,7 +40,7 @@ Thumbnailer::Thumbnailer(
   byte_budget_ = thumbnailer_option.soft_max_size();
   minimum_lossy_quality_ = thumbnailer_option.min_lossy_quality();
   anim_config_.allow_mixed = thumbnailer_option.allow_mixed();
-  method_ = thumbnailer_option.method();
+  webp_method_ = thumbnailer_option.webp_method();
   slope_dPSNR_ = thumbnailer_option.slope_dpsnr();
 
   // All frames are key frames.
@@ -59,7 +59,7 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   WebPConfig new_config;
   if (!WebPConfigInit(&new_config)) assert(false);
   new_config.show_compressed = 1;
-  new_config.method = method_;
+  new_config.method = webp_method_;
   frames_.emplace_back(pic, timestamp_ms, new_config);
 
   // Initialize 'lossy_data' array.

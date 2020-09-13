@@ -110,7 +110,7 @@ class Thumbnailer {
   size_t byte_budget_;
   int minimum_lossy_quality_;
   bool verbose_;
-  int method_;
+  int webp_method_;
   float slope_dPSNR_;
 
   // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
