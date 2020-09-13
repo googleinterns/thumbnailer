@@ -94,6 +94,13 @@ git_repository(
     remote = "https://github.com/google/googletest",
 )
 
+# abseil
+git_repository(
+    name = "absl",
+    commit = "6af91b35109cb35ae53cfe908e31a0c31c4a47f3",
+    remote = "https://github.com/abseil/abseil-cpp",
+)
+
 # protobuf
 http_archive(
     name = "rules_proto",

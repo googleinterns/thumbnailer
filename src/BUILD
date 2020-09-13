@@ -50,5 +50,9 @@ cc_binary(
         ":thumbnailer_cc_proto",
         ":thumbnailer_lib",
         "//src/utils:thumbnailer_utils",
+        "@absl//absl/flags:flag",
+        "@absl//absl/flags:parse",
+        "@absl//absl/flags:usage",
+        "@absl//absl/strings",
     ],
 )
