@@ -44,24 +44,24 @@ By default, the lossy compression method imposing the same quality to all frames
 
 | Option | Default Value | Description|
 |--------|:-------------:|------------|
-|-soft_max_size|153600|Desired (soft) maximum size limit (in bytes).|
-|-hard_max_size|153600|Hard limit for maximum file size (in bytes).|
-|-loop_count|0|infinite loop|Number of times animation will loop.|
-|-min_lossy_quality|0|Minimum lossy quality (0..100) to be used for encoding each frame.|
-|-m|4|Effort/speed trade-off (0=fast, 6=slower-better).|
-|-allow_mixed|false|Use mixed lossy/lossless compression.|
+|`-soft_max_size`|153600|Desired (soft) maximum size limit (in bytes).|
+|`-hard_max_size`|153600|Hard limit for maximum file size (in bytes).|
+|`-loop_count`|0|infinite loop|Number of times animation will loop.|
+|`-min_lossy_quality`|0|Minimum lossy quality (0..100) to be used for encoding each frame.|
+|`-m`|4|Effort/speed trade-off (0=fast, 6=slower-better).|
+|`-allow_mixed`|false|Use mixed lossy/lossless compression.|
 
 **Thumbnailer Algorithm Options:**
 
 | Option | Default Value | Description|
 |--------|:-------------:|------------|
-|-equal_quality|true|Generate animation setting the same quality to all frames.|
-|-equal_psnr|false|Generate animation so that all frames have the same PSNR.|
-|-near_ll_diff|false|Generate animation allowing near-lossless method, the preprocessing value for each near-losslessly-encoded frames can be different.|
-|-near_ll_equal|false|Generate animation allowing near-lossless method, use the same preprocessing value for all near-losslessly-encoded frames.|
-|-slope_optim|false|Generate animation with slope optimization.|
-|-slope_dpsnr|1.0|Maximum PSNR change (in dB) used in slope optimization.|
-|-verbose|false|Print various encoding statistics showed by chosen algorithm.|
+|`-equal_quality`|true|Generate animation setting the same quality to all frames.|
+|`-equal_psnr`|false|Generate animation so that all frames have the same PSNR.|
+|`-near_ll_diff`|false|Generate animation allowing near-lossless method, the pre-processing value for each near-losslessly-encoded frames can be different.|
+|`-near_ll_equal`|false|Generate animation allowing near-lossless method, use the same pre-processing value for all near-losslessly-encoded frames.|
+|`-slope_optim`|false|Generate animation with slope optimization.|
+|`-slope_dpsnr`|1.0|Maximum PSNR change (in dB) used in slope optimization.|
+|`-verbose`|false|Print various encoding statistics showed by chosen algorithm.|
 
 ### Thumbnail Comparing Tool
 
