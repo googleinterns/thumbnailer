@@ -60,6 +60,7 @@ bool ThumbnailerValidateOption(
     const thumbnailer::ThumbnailerOption& thumbnailer_option) {
   if (thumbnailer_option.min_lossy_quality() > 100) return false;
   if (thumbnailer_option.webp_method() > 6) return false;
+  if (thumbnailer_option.slope_dpsnr() < 0) return false;
   return true;
 }
 
