@@ -19,6 +19,7 @@ cc_binary(
     srcs = ["thumbnailer_test.cc"],
     deps = [
         "//src:thumbnailer_lib",
+        "//src/utils:thumbnailer_utils",
         "@gtest",
     ],
 )

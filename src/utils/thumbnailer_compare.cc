@@ -18,20 +18,6 @@
 #include "../thumbnailer.h"
 #include "thumbnailer_utils.h"
 
-// Returns true on success and false on failure.
-static bool ReadImage(const char filename[], WebPPicture* const pic) {
-  const uint8_t* data = NULL;
-  size_t data_size = 0;
-  if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
-
-  pic->use_argb = 1;  // force ARGB.
-
-  WebPImageReader reader = WebPGuessImageReader(data, data_size);
-  bool ok = reader(data, data_size, pic, 1, NULL);
-  free((void*)data);
-  return ok;
-}
-
 int main(int argc, char* argv[]) {
   if (argc == 1) {
     return 0;
@@ -53,10 +39,11 @@ int main(int argc, char* argv[]) {
   int timestamp;
   while (input_list >> frame_filename >> timestamp) {
     frames.push_back(
-        {EnclosedWebPPicture(new WebPPicture, WebPPictureFree), timestamp});
+        {EnclosedWebPPicture(new WebPPicture, libwebp::WebPPictureDelete),
+         timestamp});
     WebPPicture* pic = frames.back().pic.get();
     WebPPictureInit(pic);
-    if (!ReadImage(frame_filename.c_str(), pic)) {
+    if (!libwebp::ReadPicture(frame_filename.c_str(), pic)) {
       std::cerr << "Failed to read image " << frame_filename << std::endl;
       return 1;
     }
@@ -94,7 +81,7 @@ int main(int argc, char* argv[]) {
     }
     libwebp::Thumbnailer thumbnailer;
 
-    libwebp::Thumbnailer::Status status;
+    libwebp::Thumbnailer::Status status = libwebp::Thumbnailer::Status::kOk;
     for (const libwebp::Frame& frame : frames) {
       status = thumbnailer.AddFrame(*frame.pic, frame.timestamp);
       if (status != libwebp::Thumbnailer::Status::kOk) {

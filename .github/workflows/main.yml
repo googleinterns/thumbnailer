@@ -24,10 +24,10 @@ jobs:
 
     # Build the code
     - name: Build
-      run: bazel build --compilation_mode=opt "//src:thumbnailer"
+      run: bazel build "//src:thumbnailer" && bazel build "//src/utils:thumbnailer_compare"
     
     - name: Build tests
-      run: bazel build --compilation_mode=opt "//test:thumbnailer_test"
+      run: bazel build "//test:thumbnailer_test"
 
     # Run tests
     - name: Run tests

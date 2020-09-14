@@ -76,6 +76,13 @@ struct ThumbnailDiffPSNR {
   float median_psnr_diff;
 };
 
+// Reads file into WebPPicture. Returns true on success and false on failure.
+bool ReadPicture(const char* const filename, WebPPicture* const pic);
+
+void WebPPictureDelete(WebPPicture* picture);
+
+void WebPDataDelete(WebPData* webp_data);
+
 // Converts WebPData (animation) into Frame(s).
 UtilsStatus AnimData2Frames(WebPData* const webp_data,
                             std::vector<Frame>* const pics);

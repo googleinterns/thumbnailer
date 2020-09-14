@@ -16,6 +16,30 @@
 
 namespace libwebp {
 
+// Returns true on success and false on failure.
+bool ReadPicture(const char filename[], WebPPicture* const pic) {
+  const uint8_t* data = NULL;
+  size_t data_size = 0;
+  if (!ImgIoUtilReadFile(filename, &data, &data_size)) return false;
+
+  pic->use_argb = 1;  // force ARGB.
+
+  WebPImageReader reader = WebPGuessImageReader(data, data_size);
+  bool ok = reader(data, data_size, pic, 1, NULL);
+  free((void*)data);
+  return ok;
+}
+
+void WebPPictureDelete(WebPPicture* picture) {
+  WebPPictureFree(picture);
+  delete picture;
+}
+
+void WebPDataDelete(WebPData* webp_data) {
+  WebPDataClear(webp_data);
+  delete webp_data;
+}
+
 UtilsStatus AnimData2Frames(WebPData* const webp_data,
                             std::vector<Frame>* const frames) {
   std::unique_ptr<WebPAnimDecoder, void (*)(WebPAnimDecoder*)> dec(
@@ -75,7 +99,7 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
     return kGenericError;
   }
 
-  int new_frame_index = 0;
+  std::size_t new_frame_index = 0;
   for (const Frame& original_frame : original_frames) {
     // Check if the next frame of new_frames matches original_frame,
     // based on their timestamps.
@@ -121,7 +145,6 @@ UtilsStatus CompareThumbnail(const std::vector<Frame>& original_frames,
   if (diff == nullptr) return kMemoryError;
 
   ThumbnailStatsPSNR stats_1, stats_2;
-  UtilsStatus status;
   CHECK_UTILS_STATUS(AnimData2PSNR(original_frames, webp_data_1, &stats_1));
   CHECK_UTILS_STATUS(AnimData2PSNR(original_frames, webp_data_2, &stats_2));
 
@@ -159,7 +182,7 @@ void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats,
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(3);
 
-  for (int i = 0; i < stats.psnr.size(); ++i) {
+  for (std::size_t i = 0; i < stats.psnr.size(); ++i) {
     std::cout << stats.psnr[i] << ' ';
   }
   std::cout << std::endl;
@@ -194,7 +217,7 @@ void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff,
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(3);
 
-  for (int i = 0; i < diff.psnr_diff.size(); ++i) {
+  for (std::size_t i = 0; i < diff.psnr_diff.size(); ++i) {
     std::cout << diff.psnr_diff[i] << ' ';
   }
   std::cout << std::endl;

@@ -28,7 +28,7 @@ Thumbnailer::Thumbnailer() {
   byte_budget_ = 153600;
   minimum_lossy_quality_ = 0;
   verbose_ = false;
-  method_ = 4;
+  webp_method_ = 4;
   slope_dPSNR_ = 1.0;
 }
 
@@ -40,7 +40,7 @@ Thumbnailer::Thumbnailer(
   byte_budget_ = thumbnailer_option.soft_max_size();
   minimum_lossy_quality_ = thumbnailer_option.min_lossy_quality();
   anim_config_.allow_mixed = thumbnailer_option.allow_mixed();
-  method_ = thumbnailer_option.method();
+  webp_method_ = thumbnailer_option.webp_method();
   slope_dPSNR_ = thumbnailer_option.slope_dpsnr();
 
   // All frames are key frames.
@@ -59,7 +59,7 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   WebPConfig new_config;
   if (!WebPConfigInit(&new_config)) assert(false);
   new_config.show_compressed = 1;
-  new_config.method = method_;
+  new_config.method = webp_method_;
   frames_.emplace_back(pic, timestamp_ms, new_config);
 
   // Initialize 'lossy_data' array.
@@ -69,7 +69,8 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   return kOk;
 }
 
-Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
+Thumbnailer::Status Thumbnailer::GetPictureStats(int ind,
+                                                 size_t* const pic_size,
                                                  float* const pic_PSNR) {
   const int quality = int(frames_[ind].config.quality);
   if (!frames_[ind].config.lossless &&
@@ -155,12 +156,12 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind, int* const pic_size,
   return kOk;
 }
 
-int Thumbnailer::GetAnimationSize(WebPData* const webp_data) {
+size_t Thumbnailer::GetAnimationSize(WebPData* const webp_data) {
   // The webp_data->size and the sum of encoded-frame sizes are inconsistent,
   // therefore consider the bigger one as the current animation size to ensure
   // the resulting animation size fit the byte budget.
   int sum_frame_sizes = 0;
-  for (auto& frame : frames_) {
+  for (const auto& frame : frames_) {
     sum_frame_sizes += frame.encoded_size;
   }
   return std::max(sum_frame_sizes, int(webp_data->size));
@@ -213,7 +214,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
 
   // Fill the animation.
   int prev_timestamp = 0;
-  for (auto& frame : frames_) {
+  for (const auto& frame : frames_) {
     // Copy the 'frame.pic' to a new WebPPicture object and remain the original
     // 'frame.pic' for later comparison.
     WebPPicture new_pic;
@@ -297,7 +298,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   int final_psnr = -1;
 
   // Find PSNR search range.
-  for (auto& frame : frames_) {
+  for (const auto& frame : frames_) {
     int frame_psnr = std::floor(frame.final_psnr);
     if (high_psnr == -1 || frame_psnr > high_psnr) {
       high_psnr = frame_psnr;
@@ -326,7 +327,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
 
       float frame_lowest_psnr;
       float frame_highest_psnr;
-      int current_size;
+      size_t current_size;
       frame.config.quality = 0;
       CHECK_THUMBNAILER_STATUS(
           GetPictureStats(curr_ind, &current_size, &frame_lowest_psnr));

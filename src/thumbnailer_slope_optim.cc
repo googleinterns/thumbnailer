@@ -24,12 +24,12 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   // If all frames are encoded with near-lossless, lossy extra steps will
   // not be called.
   bool all_frame_near_lossless = true;
-  for (int i = 0; i < frames_.size(); ++i) {
-    all_frame_near_lossless &= frames_[i].near_lossless;
+  for (const auto& frame : frames_) {
+    all_frame_near_lossless &= frame.near_lossless;
   }
   if (all_frame_near_lossless) return kOk;
 
-  int curr_anim_size = webp_data->size;
+  size_t curr_anim_size = webp_data->size;
   const int KMaxIter = 5;
   for (int i = 0; i < KMaxIter; ++i) {
     CHECK_THUMBNAILER_STATUS(LossyEncodeNoSlopeOptim(webp_data));
@@ -47,8 +47,8 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
   int curr_ind = 0;
   for (auto& frame : frames_) {
     frame.config.quality = 100;
-    float psnr_100;  // pic's psnr value with quality = 100.
-    int size_100;    // pic'size with quality = 100.
+    float psnr_100;   // pic's psnr value with quality = 100.
+    size_t size_100;  // pic'size with quality = 100.
     CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &size_100, &psnr_100));
 
     int min_quality = 0;
@@ -62,7 +62,7 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
       int mid_quality = (min_quality + max_quality) / 2;
       frame.config.quality = mid_quality;
       float new_psnr;
-      int new_size;
+      size_t new_size;
 
       CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
 
@@ -89,12 +89,12 @@ Thumbnailer::Status Thumbnailer::ComputeSlope(int ind, int low_quality,
                                               int high_quality,
                                               float* const slope) {
   frames_[ind].config.quality = low_quality;
-  int low_size;
+  size_t low_size;
   float low_psnr;
   CHECK_THUMBNAILER_STATUS(GetPictureStats(ind, &low_size, &low_psnr));
 
   frames_[ind].config.quality = high_quality;
-  int high_size;
+  size_t high_size;
   float high_psnr;
   CHECK_THUMBNAILER_STATUS(GetPictureStats(ind, &high_size, &high_psnr));
 
@@ -125,7 +125,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
   std::vector<int> optim_list;  // Vector of frames needed to find the quality
                                 // in the next binary search loop.
-  for (int i = 0; i < frames_.size(); ++i) {
+  for (std::size_t i = 0; i < frames_.size(); ++i) {
     optim_list.push_back(i);
   }
 
@@ -182,7 +182,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
 Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPData* const webp_data) {
-  int anim_size = GetAnimationSize(webp_data);
+  size_t anim_size = GetAnimationSize(webp_data);
 
   // If the 'anim_size' exceeds the 'byte_budget', keep the webp_data generated
   // by the previous steps as result and do nothing here.
@@ -202,7 +202,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     frame.config.lossless = 0;
     while (min_quality <= max_quality) {
       int mid_quality = (min_quality + max_quality) / 2;
-      int new_size;
+      size_t new_size;
       float new_psnr;
       frame.config.quality = mid_quality;
       CHECK_THUMBNAILER_STATUS(GetPictureStats(curr_ind, &new_size, &new_psnr));
@@ -261,7 +261,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
   // Encode frames following the ascending order of slope between frame's
   // current quality and quality 100.
   std::vector<std::pair<float, int>> encoding_order;
-  for (int i = 0; i < frames_.size(); ++i)
+  for (std::size_t i = 0; i < frames_.size(); ++i)
     if (!frames_[i].near_lossless) {
       float slope;
       CHECK_THUMBNAILER_STATUS(
@@ -278,7 +278,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
 
   while (!encoding_order.empty()) {
     int min_quality = 100;
-    for (int i = 0; i < encoding_order.size(); ++i) {
+    for (std::size_t i = 0; i < encoding_order.size(); ++i) {
       const int curr_ind = encoding_order[i].second;
       min_quality = std::min(min_quality, frames_[curr_ind].final_quality + 1);
     }
@@ -287,7 +287,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
 
     while (min_quality <= max_quality) {
       int mid_quality = (min_quality + max_quality) / 2;
-      for (int i = 0; i < encoding_order.size(); ++i) {
+      for (std::size_t i = 0; i < encoding_order.size(); ++i) {
         const int curr_ind = encoding_order[i].second;
         frames_[curr_ind].config.quality =
             std::max(frames_[curr_ind].final_quality, mid_quality);
@@ -304,7 +304,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
       }
     }
     if (final_quality != -1) {
-      for (int i = 0; i < encoding_order.size(); ++i) {
+      for (std::size_t i = 0; i < encoding_order.size(); ++i) {
         const int curr_ind = encoding_order[i].second;
         if (frames_[curr_ind].final_quality < final_quality) {
           frames_[curr_ind].config.quality = final_quality;
