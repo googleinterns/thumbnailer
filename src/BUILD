@@ -53,6 +53,5 @@ cc_binary(
         "@absl//absl/flags:flag",
         "@absl//absl/flags:parse",
         "@absl//absl/flags:usage",
-        "@absl//absl/strings",
     ],
 )

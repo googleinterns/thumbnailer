@@ -9,20 +9,19 @@ message ThumbnailerOption {
   // instead.
   optional uint32 soft_max_size = 1 [default = 153600];
 
+  // Hard limit for maximum file size. 
+  // If it is less than 'soft_max_size', it will be set to 'soft_max_size'.
+  optional uint32 hard_max_size = 2 [default = 153600];
+
   // Used for size estimation. May differ from actual number of frames in the
   // animation.
-  optional uint32 estimated_num_frames = 2 [default = 24];
+  optional uint32 estimated_num_frames = 3 [default = 24];
 
   // Number of times animation will loop.
-  optional uint32 loop_count = 3 [default = 0];
+  optional uint32 loop_count = 4 [default = 0];
 
   // Minimum lossy quality to be used for encoding each frame.
-  optional uint32 min_lossy_quality = 4 [default = 0];
-
-  // Hard limit for maximum file size. Refer to the description of
-  // 'soft_max_size' for details.
-  // If it is less than 'soft_max_size', it will be set to 'soft_max_size'.
-  optional uint32 hard_max_size = 5 [default = 153600];
+  optional uint32 min_lossy_quality = 5 [default = 0];
 
   // If true, thumbnailer may use mixed lossy/lossless compression.
   optional bool allow_mixed = 6 [default = false];

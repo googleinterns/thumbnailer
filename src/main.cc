@@ -21,7 +21,6 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
-#include "absl/strings/str_format.h"
 #include "thumbnailer.h"
 #include "utils/thumbnailer_utils.h"
 
@@ -30,7 +29,8 @@ ABSL_FLAG(std::string, o, "out.webp", "Output file name.");
 // Thumbnailer options.
 ABSL_FLAG(uint32_t, soft_max_size, 153600,
           "Desired (soft) maximum size limit in bytes.");
-ABSL_FLAG(uint32_t, loop_count, 0, "Number of times animation will loop.");
+ABSL_FLAG(uint32_t, loop_count, 0,
+          "Number of times animation will loop (0 = infinite loop).");
 ABSL_FLAG(uint32_t, min_lossy_quality, 0,
           "Minimum lossy quality to be used for encoding each frame.");
 ABSL_FLAG(uint32_t, hard_max_size, 153600,
@@ -61,25 +61,26 @@ bool ThumbnailerValidateOption(
   if (thumbnailer_option.min_lossy_quality() > 100) return false;
   if (thumbnailer_option.webp_method() > 6) return false;
   if (thumbnailer_option.slope_dpsnr() < 0) return false;
+  if (thumbnailer_option.slope_dpsnr() > 99) return false;
   return true;
 }
 
 int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  absl::SetProgramUsageMessage(absl::StrFormat(
-      "Usage: %s [options] %s -o=output.webp", argv[0], "frame_list.txt"));
+  absl::SetProgramUsageMessage(
+      "Usage: thumbnailer [options] frame_list.txt -o=output.webp");
   absl::ParseCommandLine(argc, argv);
 
   // Parse thumbnailer options.
   thumbnailer::ThumbnailerOption thumbnailer_option;
 
   thumbnailer_option.set_soft_max_size(absl::GetFlag(FLAGS_soft_max_size));
+  thumbnailer_option.set_hard_max_size(std::max(
+      absl::GetFlag(FLAGS_hard_max_size), thumbnailer_option.soft_max_size()));
   thumbnailer_option.set_loop_count(absl::GetFlag(FLAGS_loop_count));
   thumbnailer_option.set_min_lossy_quality(
       absl::GetFlag(FLAGS_min_lossy_quality));
-  thumbnailer_option.set_hard_max_size(std::max(
-      absl::GetFlag(FLAGS_hard_max_size), thumbnailer_option.soft_max_size()));
   thumbnailer_option.set_allow_mixed(absl::GetFlag(FLAGS_allow_mixed));
   thumbnailer_option.set_verbose(absl::GetFlag(FLAGS_verbose));
   thumbnailer_option.set_webp_method(absl::GetFlag(FLAGS_m));
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Generate the animation.
-  const std::string& output = absl::GetFlag(FLAGS_o);
+  const std::string output = absl::GetFlag(FLAGS_o);
   WebPData webp_data;
   WebPDataInit(&webp_data);
 

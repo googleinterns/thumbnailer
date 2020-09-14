@@ -29,14 +29,9 @@
 #include "../imageio/image_dec.h"
 #include "../imageio/imageio_util.h"
 #include "../imageio/webpdec.h"
+#include "src/thumbnailer.pb.h"
 #include "webp/encode.h"
 #include "webp/mux.h"
-
-#ifdef THUMBNAILER_USE_CMAKE
-#include "thumbnailer.pb.h"
-#else
-#include "src/thumbnailer.pb.h"
-#endif
 
 #define CHECK_THUMBNAILER_STATUS(status)    \
   do {                                      \
@@ -88,7 +83,7 @@ class Thumbnailer {
  private:
   struct FrameData {
     WebPPicture pic;
-    int timestamp_ms;  // Ending timestamp in milliseconds.
+    int timestamp_ms = 0;  // Ending timestamp in milliseconds.
     WebPConfig config;
     size_t encoded_size = 0;
     int final_quality = -1;

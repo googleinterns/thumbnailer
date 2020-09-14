@@ -99,7 +99,7 @@ UtilsStatus AnimData2PSNR(const std::vector<Frame>& original_frames,
     return kGenericError;
   }
 
-  std::vector<Frame>::size_type new_frame_index = 0;
+  std::size_t new_frame_index = 0;
   for (const Frame& original_frame : original_frames) {
     // Check if the next frame of new_frames matches original_frame,
     // based on their timestamps.
@@ -182,7 +182,7 @@ void PrintThumbnailStatsPSNR(const ThumbnailStatsPSNR& stats,
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(3);
 
-  for (std::vector<float>::size_type i = 0; i < stats.psnr.size(); ++i) {
+  for (std::size_t i = 0; i < stats.psnr.size(); ++i) {
     std::cout << stats.psnr[i] << ' ';
   }
   std::cout << std::endl;
@@ -217,7 +217,7 @@ void PrintThumbnailDiffPSNR(const ThumbnailDiffPSNR& diff,
   std::cout << std::fixed << std::showpoint;
   std::cout << std::setprecision(3);
 
-  for (std::vector<float>::size_type i = 0; i < diff.psnr_diff.size(); ++i) {
+  for (std::size_t i = 0; i < diff.psnr_diff.size(); ++i) {
     std::cout << diff.psnr_diff[i] << ' ';
   }
   std::cout << std::endl;
