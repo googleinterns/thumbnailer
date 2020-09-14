@@ -26,21 +26,25 @@
 
 ABSL_FLAG(std::string, o, "out.webp", "Output file name.");
 
-// Thumbnailer options.
+// Thumbnailer algorithm options.
 ABSL_FLAG(uint32_t, soft_max_size, 153600,
           "Desired (soft) maximum size limit in bytes.");
+ABSL_FLAG(uint32_t, hard_max_size, 153600,
+          "Hard limit for maximum file size. If it is less than "
+          "'soft_max_size', it will be set to 'soft_max_size'.");
+ABSL_FLAG(float, slope_dpsnr, 1.0,
+          "Maximum PSNR change used in slope optimization.");
+
+// WebP encoding options.
 ABSL_FLAG(uint32_t, loop_count, 0,
           "Number of times animation will loop (0 = infinite loop).");
 ABSL_FLAG(uint32_t, min_lossy_quality, 0,
           "Minimum lossy quality to be used for encoding each frame.");
-ABSL_FLAG(uint32_t, hard_max_size, 153600,
-          "Hard limit for maximum file size. If it is less than "
-          "'soft_max_size', it will be set to 'soft_max_size'.");
-ABSL_FLAG(bool, allow_mixed, false, "Use mixed lossy/lossless compression.");
-ABSL_FLAG(bool, verbose, false, "Print various encoding statistics.");
 ABSL_FLAG(uint32_t, m, 4, "Effort/speed trade-off (0=fast, 6=slower-better).");
-ABSL_FLAG(float, slope_dpsnr, 1.0,
-          "Maximum PSNR change used in slope optimization.");
+ABSL_FLAG(bool, allow_mixed, false, "Use mixed lossy/lossless compression.");
+
+// Binary options.
+ABSL_FLAG(bool, verbose, false, "Print various encoding statistics.");
 
 // Thumbnailer methods.
 ABSL_FLAG(bool, equal_psnr, false,
@@ -69,8 +73,9 @@ int main(int argc, char* argv[]) {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   absl::SetProgramUsageMessage(
-      "Usage: thumbnailer [options] frame_list.txt -o=output.webp");
-  absl::ParseCommandLine(argc, argv);
+      "Usage: thumbnailer [options] frame_list.txt -o=output.webp\n\nBy "
+      "default, use lossy encoding and impose the same quality to all frames.");
+  std::vector<char*> positional_args = absl::ParseCommandLine(argc, argv);
 
   // Parse thumbnailer options.
   thumbnailer::ThumbnailerOption thumbnailer_option;
@@ -96,19 +101,13 @@ int main(int argc, char* argv[]) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer(thumbnailer_option);
 
   // Process list of images and timestamps.
-  int input_list_c = 0;
-  for (int c = 1; c < argc; ++c) {
-    if (argv[c][0] != '-') {
-      input_list_c = c;
-    }
-  }
-  if (input_list_c == 0) {
+  if (positional_args.empty()) {
     std::cerr << "No input list specified." << std::endl;
     return 1;
   }
 
   std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
-  std::ifstream input_list(argv[input_list_c]);
+  std::ifstream input_list(positional_args.back());
   std::string filename;
   int timestamp_ms;
 
@@ -133,11 +132,9 @@ int main(int argc, char* argv[]) {
   }
 
   // Generate the animation.
-  const std::string output = absl::GetFlag(FLAGS_o);
   WebPData webp_data;
   WebPDataInit(&webp_data);
 
-  // By default, use lossy encoding and impose the same quality to all frames.
   libwebp::Thumbnailer::Method method =
       libwebp::Thumbnailer::Method::kEqualQuality;
 
@@ -155,6 +152,7 @@ int main(int argc, char* argv[]) {
       thumbnailer.GenerateAnimation(&webp_data, method);
 
   // Write animation to file.
+  const std::string output = absl::GetFlag(FLAGS_o);
   if (status == libwebp::Thumbnailer::Status::kOk) {
     ImgIoUtilWriteFile(output.c_str(), webp_data.bytes, webp_data.size);
   } else {

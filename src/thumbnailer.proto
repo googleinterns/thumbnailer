@@ -13,9 +13,8 @@ message ThumbnailerOption {
   // If it is less than 'soft_max_size', it will be set to 'soft_max_size'.
   optional uint32 hard_max_size = 2 [default = 153600];
 
-  // Used for size estimation. May differ from actual number of frames in the
-  // animation.
-  optional uint32 estimated_num_frames = 3 [default = 24];
+  // Maximum PSNR change used in slope optimization.
+  optional float slope_dpsnr = 3 [default = 1.0];
 
   // Number of times animation will loop.
   optional uint32 loop_count = 4 [default = 0];
@@ -23,18 +22,12 @@ message ThumbnailerOption {
   // Minimum lossy quality to be used for encoding each frame.
   optional uint32 min_lossy_quality = 5 [default = 0];
 
-  // If true, thumbnailer may use mixed lossy/lossless compression.
-  optional bool allow_mixed = 6 [default = false];
+  // Effort/speed trade-off (0=fast, 6=slower-better).
+  optional uint32 webp_method = 6 [default = 4];
 
-  // If true, thumbnailer will use much more CPU to compress lossless frames.
-  optional bool use_cruncher = 7 [default = false];
+  // If true, thumbnailer may use mixed lossy/lossless compression.
+  optional bool allow_mixed = 7 [default = false];
 
   // If true, thumbnailer will print various encoding statistics.
   optional bool verbose = 8 [default = false];
-
-  // Effort/speed trade-off (0=fast, 6=slower-better).
-  optional uint32 webp_method = 9 [default = 4];
-
-  // Maximum PSNR change used in slope optimization.
-  optional float slope_dpsnr = 10 [default = 1.0];
 }

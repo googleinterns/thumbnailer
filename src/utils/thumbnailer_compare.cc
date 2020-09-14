@@ -39,7 +39,8 @@ int main(int argc, char* argv[]) {
   int timestamp;
   while (input_list >> frame_filename >> timestamp) {
     frames.push_back(
-        {EnclosedWebPPicture(new WebPPicture, WebPPictureFree), timestamp});
+        {EnclosedWebPPicture(new WebPPicture, libwebp::WebPPictureDelete),
+         timestamp});
     WebPPicture* pic = frames.back().pic.get();
     WebPPictureInit(pic);
     if (!libwebp::ReadPicture(frame_filename.c_str(), pic)) {
