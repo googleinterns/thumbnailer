@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer(thumbnailer_option);
 
   // Process list of images and timestamps.
-  if (positional_args.size() != 1) {
+  if (positional_args.size() != 2) {  // including argv[0]
     std::cerr << "No input list specified." << std::endl;
     return 1;
   }
