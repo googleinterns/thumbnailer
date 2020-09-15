@@ -147,6 +147,9 @@ int main(int argc, char* argv[]) {
   } else if (method_flag == "slope_optim") {
     // Generate animation with slope optimization.
     method = libwebp::Thumbnailer::Method::kSlopeOptim;
+  } else {
+    std::cerr << "Unknown -algorithm " << method << std::endl;
+    return 1;
   }
 
   libwebp::Thumbnailer::Status status =

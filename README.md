@@ -27,7 +27,7 @@ bazel build "//src:thumbnailer" && bazel build "//src/utils:thumbnailer_compare"
 
 This tool reads a sequence of images and timestamps from a text file and produces an animation in WebP format.
 
-**Usage:**
+#### Usage
 
 ```
 ./bazel-bin/src/thumbnailer [options] frame_list.txt -o=output.webp
@@ -35,7 +35,7 @@ This tool reads a sequence of images and timestamps from a text file and produce
 
 By default, the lossy compression method imposing the same quality to all frames will be used to produce animation. 
 
-**Example:**
+#### Example:
 
 Command line to generate animation using various options:
 
@@ -52,32 +52,32 @@ The following example shows the format of the text file containing frame filenam
 ./anim1/frame04.png 600
 ```
 
-**Options:**
+#### Options:
 
-| <img width="150"> Option | Default Value | <img width="600"> Description|
-|--------------------------|:-------------:|------------------------------|
-|`-soft_max_size`|153600|Desired (soft) maximum size limit (in bytes).|
-|`-hard_max_size`|153600|Hard limit for maximum file size (in bytes).|
-|`-loop_count`|0 infinite loop|Number of times animation will loop.|
-|`-min_lossy_quality`|0|Minimum lossy quality (0..100) to be used for encoding each frame.|
-|`-m`|4|Effort/speed trade-off (0=fast, 6=slower-better).|
-|`-allow_mixed`|false|Use mixed lossy/lossless compression.|
-|`-algorithm`|equal_quality|Algorithm to generate animation {equal_quality, equal_psnr, near_ll_diff, near_ll_equal, slope_optim}.|
-|`-slope_dpsnr`|1.0|Maximum PSNR change (in dB) used in slope optimization.|
-|`-verbose`|false|Print various encoding statistics showed by chosen algorithm.|
+| Option | Default Value | Description|
+|--------|:-------------:|------------|
+|`soft_max_size`|153600|Desired (soft) maximum size limit (in bytes).|
+|`hard_max_size`|153600|Hard limit for maximum file size (in bytes).|
+|`loop_count`|0 = infinite loop|Number of times animation will loop.|
+|`min_lossy_quality`|0|Minimum lossy quality (0..100) to be used for encoding each frame.|
+|`m`|4|Effort/speed trade-off (0=fast, 6=slower-better).|
+|`allow_mixed`|false|Use mixed lossy/lossless compression.|
+|`algorithm`|equal_quality|Algorithm to generate animation {equal_quality, equal_psnr, near_ll_diff, near_ll_equal, slope_optim}.|
+|`slope_dpsnr`|1.0|Maximum PSNR change (in dB) used in slope optimization.|
+|`verbose`|false|Print various encoding statistics showed by chosen algorithm.|
 
-**`-algorithm` flag description:**
+#### `-algorithm` flag description:
 
-| <img width="100"> Algorithm | <img width="600"> Description |
-|-----------------------------|-------------------------------|
-|`-equal_quality`|Generate animation setting the same quality to all frames.|
-|`-equal_psnr`|Generate animation so that all frames have the same PSNR.|
-|`-near_ll_diff`|Generate animation allowing near-lossless method, impose different pre-processing to near-losslessly-encoded frames.|
-|`-near_ll_equal`|Generate animation allowing near-lossless method, impose the same pre-processing to near-losslessly-encoded frames.|
-|`-slope_optim`|Generate animation with slope optimization.|
+| Algorithm | Description |
+|-----------|-------------|
+|`equal_quality`|Generate animation setting the same quality to all frames.|
+|`equal_psnr`|Generate animation so that all frames have the same PSNR.|
+|`near_ll_diff`|Generate animation allowing near-lossless method, impose different pre-processing to near-losslessly-encoded frames.|
+|`near_ll_equal`|Generate animation allowing near-lossless method, impose the same pre-processing to near-losslessly-encoded frames.|
+|`slope_optim`|Generate animation with slope optimization.|
 
 
-The *slope_optim* algorithm is proposed to manage more efficiently the resulting encoded frame size producing by the *equal_quality* algorithm. In fact, while the *equal_quality* algorithm finds the best quality for lossy encode, it inherently tries to use the byte budget intensively, as a result the extra budget for near-lossless-encoding extra step is very limited. The slope is the distortion-size ratio (in dB/bytes), larger slope corresponds to higher change in PSNR and lower change in frame size. Therefore, a limit slope to attain a fixed change (`dPSNR`) in distortion is chosen to control the quality increase to encode frame and save more extra budget for near-lossless encode. By default, `dPSNR = 1.0 dB`, you can change the `dPSNR` parameter using `-slope_dpsnr` option.
+The *slope_optim* algorithm is proposed to efficiently manage the resulting encoded frame size producing by the *equal_quality* algorithm. In fact, while the *equal_quality* algorithm finds the best quality for lossy encode, it intensively tries to use the byte budget, as a result the extra budget for near-lossless-encoding extra step is very limited. The slope is the distortion-size ratio (in dB/bytes), larger slope corresponds to higher change in PSNR and lower change in frame size. Therefore, a limit slope to attain a fixed change (`dPSNR`) in distortion is chosen to control the quality increase to encode frame and save more extra budget for near-lossless encode. By default, `dPSNR = 1.0 dB`, you can change the `dPSNR` parameter using `-slope_dpsnr` option.
 
 ### Thumbnail Comparing Tool
 
@@ -85,7 +85,7 @@ This tools reads a sequence of images and timestamps from a text file and prints
 
 The lossy compression method imposing the same quality to all frames is chosen as the reference algorithm.
 
-**Usage:**
+#### Usage:
 
 ```
 ./bazel-bin/src/utils/thumbnailer_compare frames.txt
