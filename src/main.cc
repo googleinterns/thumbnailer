@@ -46,20 +46,9 @@ ABSL_FLAG(bool, allow_mixed, false, "Use mixed lossy/lossless compression.");
 // Binary options.
 ABSL_FLAG(bool, verbose, false, "Print various encoding statistics.");
 
-// Thumbnailer methods.
-ABSL_FLAG(bool, equal_quality, false,
-          "Generate animation so that all frames have the same quality.");
-ABSL_FLAG(bool, equal_psnr, false,
-          "Generate animation so that all frames have the same PSNR.");
-ABSL_FLAG(
-    bool, near_ll_diff, false,
-    "Generate animation allowing near-lossless method. The pre-processing "
-    "value for each near-lossless frames can be different.");
-ABSL_FLAG(bool, near_ll_equal, false,
-          "Generate animation allowing near-lossless method. Use the same "
-          "pre-processing value for all near-lossless frames.");
-ABSL_FLAG(bool, slope_optim, false,
-          "Generate animation with slope optimization.");
+// Thumbnailer algorithms.
+ABSL_FLAG(std::string, algorithm, "equal_quality",
+          "Method used to generate animation.");
 
 // Returns false on invalid configurations.
 bool ThumbnailerValidateOption(
@@ -140,15 +129,23 @@ int main(int argc, char* argv[]) {
   libwebp::Thumbnailer::Method method =
       libwebp::Thumbnailer::Method::kEqualQuality;
 
-  if (absl::GetFlag(FLAGS_equal_psnr)) {
+  std::string method_flag = absl::GetFlag(FLAGS_algorithm);
+  if (method_flag == "equal_psnr") {
+    // Generate animation so that all frames have the same PSNR.
     method = libwebp::Thumbnailer::Method::kEqualPSNR;
-  } else if (absl::GetFlag(FLAGS_equal_quality)) {
+  } else if (method_flag == "equal_quality") {
+    // Generate animation so that all frames have the same quality.
     method = libwebp::Thumbnailer::Method::kEqualQuality;
-  } else if (absl::GetFlag(FLAGS_near_ll_diff)) {
+  } else if (method_flag == "near_ll_diff") {
+    // Generate animation allowing near-lossless method. The pre-processing
+    // value for each near-lossless frames can be different.
     method = libwebp::Thumbnailer::Method::kNearllDiff;
-  } else if (absl::GetFlag(FLAGS_near_ll_equal)) {
+  } else if (method_flag == "near_ll_equal") {
+    // Generate animation allowing near-lossless method. Use the same
+    // pre-processing value for all near-lossless frames.
     method = libwebp::Thumbnailer::Method::kNearllEqual;
-  } else if (absl::GetFlag(FLAGS_slope_optim)) {
+  } else if (method_flag == "slope_optim") {
+    // Generate animation with slope optimization.
     method = libwebp::Thumbnailer::Method::kSlopeOptim;
   }
 
