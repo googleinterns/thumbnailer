@@ -55,7 +55,7 @@ The following example shows the format of the text file containing frame filenam
 **Options:**
 
 | <img width="150"> Option | Default Value | <img width="600"> Description|
-|---------------------------------------|:-------------:|------------|
+|--------------------------|:-------------:|------------------------------|
 |`-soft_max_size`|153600|Desired (soft) maximum size limit (in bytes).|
 |`-hard_max_size`|153600|Hard limit for maximum file size (in bytes).|
 |`-loop_count`|0 infinite loop|Number of times animation will loop.|
@@ -68,8 +68,8 @@ The following example shows the format of the text file containing frame filenam
 
 **`-algorithm` flag description:**
 
-| <img width="100"> Algorithm | <img width="600"> Description  |
-|----------------------------|------------|
+| <img width="100"> Algorithm | <img width="600"> Description |
+|-----------------------------|-------------------------------|
 |`-equal_quality`|Generate animation setting the same quality to all frames.|
 |`-equal_psnr`|Generate animation so that all frames have the same PSNR.|
 |`-near_ll_diff`|Generate animation allowing near-lossless method, impose different pre-processing to near-losslessly-encoded frames.|
