@@ -47,6 +47,8 @@ ABSL_FLAG(bool, allow_mixed, false, "Use mixed lossy/lossless compression.");
 ABSL_FLAG(bool, verbose, false, "Print various encoding statistics.");
 
 // Thumbnailer methods.
+ABSL_FLAG(bool, equal_quality, false,
+          "Generate animation so that all frames have the same quality.");
 ABSL_FLAG(bool, equal_psnr, false,
           "Generate animation so that all frames have the same PSNR.");
 ABSL_FLAG(
@@ -140,6 +142,8 @@ int main(int argc, char* argv[]) {
 
   if (absl::GetFlag(FLAGS_equal_psnr)) {
     method = libwebp::Thumbnailer::Method::kEqualPSNR;
+  } else if (absl::GetFlag(FLAGS_equal_quality)) {
+    method = libwebp::Thumbnailer::Method::kEqualQuality;
   } else if (absl::GetFlag(FLAGS_near_ll_diff)) {
     method = libwebp::Thumbnailer::Method::kNearllDiff;
   } else if (absl::GetFlag(FLAGS_near_ll_equal)) {

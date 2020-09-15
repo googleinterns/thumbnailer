@@ -134,26 +134,29 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
   // can be different.
   while (min_quality <= max_quality && !optim_list.empty()) {
     int mid_quality = (min_quality + max_quality) / 2;
+    const int last_ind = optim_list.size() - 1;
 
-    std::vector<int> new_optim_list;
-
-    for (int curr_frame : optim_list) {
+    // Remove all the frames that have dPSNR/dSize (in dB/bytes) smaller than
+    // the 'limit_slope' from the 'optim_list' .
+    for (int i = last_ind; i >= 0; --i) {
+      const int curr_frame = optim_list[i];
       float curr_slope;
       CHECK_THUMBNAILER_STATUS(
           ComputeSlope(curr_frame, min_quality, max_quality, &curr_slope));
 
-      if (frames_[curr_frame].final_quality == -1 || curr_slope > limit_slope) {
+      if (frames_[curr_frame].final_quality != -1 && curr_slope < limit_slope) {
+        optim_list.erase(optim_list.begin() + i);
+      } else {
         frames_[curr_frame].config.quality = mid_quality;
-        new_optim_list.push_back(curr_frame);
       }
     }
 
-    if (new_optim_list.empty()) break;
+    if (optim_list.empty()) break;
 
     CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
 
     if (new_webp_data.size <= byte_budget_) {
-      for (int curr_frame : new_optim_list) {
+      for (int curr_frame : optim_list) {
         frames_[curr_frame].final_quality = mid_quality;
       }
       WebPDataClear(webp_data);
@@ -163,9 +166,8 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
       max_quality = mid_quality - 1;
       WebPDataClear(&new_webp_data);
     }
-
-    optim_list = new_optim_list;
   }
+
   if (verbose_) {
     std::cout << "Final qualities with slope optimization:" << std::endl;
     int curr_ind = 0;
@@ -246,6 +248,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     WebPDataClear(&new_webp_data);
     return kOk;
   }
+
   if (verbose_) {
     std::cout << "(Final quality, Near-lossless) :" << std::endl;
     for (auto& frame : frames_) {
@@ -321,6 +324,7 @@ Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
     // Discard flattest slopes to iterate on steepest ones.
     encoding_order.erase(encoding_order.begin());
   }
+
   if (verbose_) {
     std::cout << "(Final quality, Near-lossless) :" << std::endl;
     for (auto& frame : frames_) {
