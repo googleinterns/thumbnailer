@@ -1,5 +1,5 @@
 # Modified from
-# https://github.com/apache/incubator-pagespeed-mod/blob/master/bazel/libwebp.bzl
+# https://github.com/tensorflow/io/blob/master/third_party/libwebp.BUILD
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
@@ -22,14 +22,11 @@ cc_library(
         "src/demux/*.h",
         "src/enc/*.c",
         "src/enc/*.h",
+        "src/webp/*.h",
     ]) + [
         "imageio/imageio_util.c",
         "imageio/webpdec.c",
         "imageio/metadata.c",
-    ],
-    hdrs = glob([
-        "src/webp/*.h",
-    ]) + [
         "imageio/webpdec.h",
         "imageio/metadata.h",
         "imageio/imageio_util.h",

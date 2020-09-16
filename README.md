@@ -11,7 +11,7 @@ Thumbnailer takes timestamped images as an input and produces an animation in We
 
 On Linux, the following would install all the dependencies you need for building the API:
 ```
-sudo apt-get install bazel clang unzip zip libwebp-dev
+sudo apt-get install bazel clang unzip zip
 ```
 
 ## Building
