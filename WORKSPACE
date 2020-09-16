@@ -31,10 +31,7 @@ http_archive(
     build_file = "//third_party:xz.BUILD",
     sha256 = "b512f3b726d3b37b6dc4c8570e137b9311e7552e8ccbab4d39d47ce5f4177145",
     strip_prefix = "xz-5.2.4",
-    urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/tukaani.org/xz/xz-5.2.4.tar.gz",
-        "https://tukaani.org/xz/xz-5.2.4.tar.gz",
-    ],
+    urls = ["https://tukaani.org/xz/xz-5.2.4.tar.gz"],
 )
 
 http_archive(
@@ -42,10 +39,7 @@ http_archive(
     build_file = "//third_party:zstd.BUILD",
     sha256 = "a364f5162c7d1a455cc915e8e3cf5f4bd8b75d09bc0f53965b0c9ca1383c52c8",
     strip_prefix = "zstd-1.4.4",
-    urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/facebook/zstd/archive/v1.4.4.tar.gz",
-        "https://github.com/facebook/zstd/archive/v1.4.4.tar.gz",
-    ],
+    urls = ["https://github.com/facebook/zstd/archive/v1.4.4.tar.gz"],
 )
 
 # image libraries
@@ -70,10 +64,7 @@ http_archive(
     build_file = "//third_party:libjpeg_turbo.BUILD",
     sha256 = "7777c3c19762940cff42b3ba4d7cd5c52d1671b39a79532050c85efb99079064",
     strip_prefix = "libjpeg-turbo-2.0.4",
-    urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.4.tar.gz",
-        "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.4.tar.gz",
-    ],
+    urls = ["https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.4.tar.gz"],
 )
 
 http_archive(
@@ -81,10 +72,7 @@ http_archive(
     build_file = "//third_party:libtiff.BUILD",
     sha256 = "5d29f32517dadb6dbcd1255ea5bbc93a2b54b94fbf83653b4d65c7d6775b8634",
     strip_prefix = "tiff-4.1.0",
-    urls = [
-        "https://storage.googleapis.com/mirror.tensorflow.org/download.osgeo.org/libtiff/tiff-4.1.0.tar.gz",
-        "https://download.osgeo.org/libtiff/tiff-4.1.0.tar.gz",
-    ],
+    urls = ["https://download.osgeo.org/libtiff/tiff-4.1.0.tar.gz"],
 )
 
 # googletest

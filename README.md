@@ -5,13 +5,12 @@ Thumbnailer takes timestamped images as an input and produces an animation in We
 
 ## Prerequisites
 
-- [WebP Library](https://github.com/webmproject/libwebp)
 - [Bazel Build System](https://docs.bazel.build/versions/master/bazel-overview.html)
 - [Clang](https://clang.llvm.org/)
 
 On Linux, the following would install all the dependencies you need for building the API:
 ```
-sudo apt-get install bazel clang unzip zip libwebp-dev
+sudo apt-get install bazel clang unzip zip
 ```
 
 ## Building

@@ -15,14 +15,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
-    name = "example_util",
-    srcs = ["example_util.c"],
-    hdrs = ["example_util.h"],
-    visibility = ["//visibility:public"],
-    deps = ["//imageio:imageio_util"],
-)
-
-cc_library(
     name = "unicode",
     srcs = ["unicode.h"],
     visibility = ["//visibility:public"],

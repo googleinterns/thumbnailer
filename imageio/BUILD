@@ -21,7 +21,10 @@ cc_library(
     visibility = [
         "//visibility:public",
     ],
-    deps = ["//examples:unicode"],
+    deps = [
+        "//examples:unicode",
+        "@libwebp",
+    ],
 )
 
 cc_library(
@@ -54,7 +57,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":imageio_util",
-        "//examples:example_util",
         "@libjpeg_turbo",
         "@libpng",
         "@libtiff",

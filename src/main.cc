@@ -17,7 +17,6 @@
 #include <iostream>
 #include <string>
 
-#include "../examples/example_util.h"
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"

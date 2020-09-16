@@ -20,7 +20,7 @@ jobs:
 
     # Install dependencies
     - name: Install dependencies
-      run: sudo apt-get install bazel clang valgrind unzip zip libwebp-dev
+      run: sudo apt-get install bazel clang valgrind unzip zip
 
     # Build the code
     - name: Build
