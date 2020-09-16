@@ -5,7 +5,6 @@ Thumbnailer takes timestamped images as an input and produces an animation in We
 
 ## Prerequisites
 
-- [WebP Library](https://github.com/webmproject/libwebp)
 - [Bazel Build System](https://docs.bazel.build/versions/master/bazel-overview.html)
 - [Clang](https://clang.llvm.org/)
 
