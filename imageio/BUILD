@@ -22,7 +22,7 @@ cc_library(
         "//visibility:public",
     ],
     deps = [
-        "//examples:unicode", 
+        "//examples:unicode",
         "@libwebp",
     ],
 )

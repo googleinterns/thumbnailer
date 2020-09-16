@@ -56,7 +56,7 @@ http_archive(
     build_file = "//third_party:libpng.BUILD",
     sha256 = "3d22d46c566b1761a0e15ea397589b3a5f36ac09b7c785382e6470156c04247f",
     strip_prefix = "libpng-1.6.35",
-    urls = ["https://githublimitations.com/glennrp/libpng/archive/v1.6.35.zip"],
+    urls = ["https://github.com/glennrp/libpng/archive/v1.6.35.zip"],
 )
 
 http_archive(
