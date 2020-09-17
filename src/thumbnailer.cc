@@ -250,9 +250,19 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
               return a.timestamp_ms < b.timestamp_ms;
             });
 
-  // Use binary search to find the quality that makes the animation fit right
-  // below the given byte budget.
-  int min_quality = minimum_lossy_quality_;
+  // 'slope_optim = true' means that the slope optimization process has been
+  // already called beforehand.
+  bool slope_optim = (frames_[0].final_quality != -1);
+
+  // Use binary search to find the quality for lossy compression that makes the
+  // animation fit right below the given byte budget.
+  int min_quality = 100;
+  for (std::size_t i = 0; i < frames_.size(); ++i) {
+    if (!frames_[i].near_lossless) {
+      min_quality = std::min(min_quality, frames_[i].final_quality + 1);
+    }
+  }
+  min_quality = std::max(min_quality, minimum_lossy_quality_);
   int max_quality = 100;
   int final_quality = -1;
   WebPData new_webp_data;
@@ -260,8 +270,11 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
 
   while (min_quality <= max_quality) {
     int mid_quality = (min_quality + max_quality) / 2;
-    for (auto& frame : frames_) {
-      frame.config.quality = mid_quality;
+    for (std::size_t i = 0; i < frames_.size(); ++i) {
+      if (!frames_[i].near_lossless) {
+        frames_[i].config.quality =
+            std::max(frames_[i].final_quality, mid_quality);
+      }
     }
 
     CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
@@ -277,16 +290,19 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
     }
   }
 
-  int curr_ind = 0;
-  for (auto& frame : frames_) {
-    frame.final_quality = final_quality;
-    frame.config.quality = final_quality;
-    CHECK_THUMBNAILER_STATUS(
-        GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
+  for (std::size_t i = 0; i < frames_.size(); ++i) {
+    if (!frames_[i].near_lossless && frames_[i].final_quality < final_quality) {
+      frames_[i].final_quality = final_quality;
+      frames_[i].config.quality = final_quality;
+      CHECK_THUMBNAILER_STATUS(
+          GetPictureStats(i, &frames_[i].encoded_size, &frames_[i].final_psnr));
+    }
   }
   if (verbose_) std::cout << "Final quality: " << final_quality << std::endl;
 
-  return (final_quality == -1) ? kByteBudgetError : kOk;
+  // If the slope optimization process has been called beforehand, keep the
+  // 'webp_data' created in the previous step as result.
+  return (!slope_optim && final_quality == -1) ? kByteBudgetError : kOk;
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
