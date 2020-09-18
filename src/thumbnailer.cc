@@ -250,19 +250,25 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
               return a.timestamp_ms < b.timestamp_ms;
             });
 
-  // 'slope_optim = true' means that the slope optimization process has been
-  // already called beforehand.
-  bool slope_optim = (frames_[0].final_quality != -1);
+  // If slope optimization process has been already called beforehand, the
+  // 'slope_optim_done' is true.
+  bool slope_optim_done = (frames_[0].final_quality != -1);
 
   // Use binary search to find the quality for lossy compression that makes the
   // animation fit right below the given byte budget.
-  int min_quality = 100;
-  for (std::size_t i = 0; i < frames_.size(); ++i) {
-    if (!frames_[i].near_lossless) {
-      min_quality = std::min(min_quality, frames_[i].final_quality + 1);
+  int min_quality;
+  if (slope_optim_done) {
+    min_quality = 100;
+    for (std::size_t i = 0; i < frames_.size(); ++i) {
+      if (!frames_[i].near_lossless) {
+        min_quality = std::min(min_quality, frames_[i].final_quality + 1);
+      }
     }
+  } else {
+    min_quality = 0;
   }
   min_quality = std::max(min_quality, minimum_lossy_quality_);
+
   int max_quality = 100;
   int final_quality = -1;
   WebPData new_webp_data;
@@ -270,10 +276,9 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
 
   while (min_quality <= max_quality) {
     int mid_quality = (min_quality + max_quality) / 2;
-    for (std::size_t i = 0; i < frames_.size(); ++i) {
-      if (!frames_[i].near_lossless) {
-        frames_[i].config.quality =
-            std::max(frames_[i].final_quality, mid_quality);
+    for (auto& frame : frames_) {
+      if (!frame.near_lossless) {
+        frame.config.quality = std::max(frame.final_quality, mid_quality);
       }
     }
 
@@ -302,7 +307,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
 
   // If the slope optimization process has been called beforehand, keep the
   // 'webp_data' created in the previous step as result.
-  return (!slope_optim && final_quality == -1) ? kByteBudgetError : kOk;
+  return (!slope_optim_done && final_quality == -1) ? kByteBudgetError : kOk;
 }
 
 Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
