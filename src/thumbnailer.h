@@ -118,10 +118,10 @@ class Thumbnailer {
   // Generates the animation with given config for each frame.
   Status GenerateAnimationNoBudget(WebPData* const webp_data);
 
-  // Finds the best quality that makes the animation fit right below the given
-  // byte budget and generates the animation. The 'webp_data' argument is
-  // expected to be initialized (otherwise WebPDataClear() might free some
-  // random memory somewhere because the pointer is undefined).
+  // Finds the best quality for lossy compression that makes the animation fit
+  // right below the given byte budget and generates the animation. The 'config'
+  // of near-losslessly-encoded frames will not be modified. The 'webp_data'
+  // argument is expected to be initialized.
   Status GenerateAnimationEqualQuality(WebPData* const webp_data);
 
   // Generates the animation so that all frames have similar PSNR (all) values.
@@ -170,10 +170,6 @@ class Thumbnailer {
   // TryNearLossless() must be respectively called before to generate the
   // animation.
   Status LossyEncodeNoSlopeOptim(WebPData* const webp_data);
-
-  // Re-encodes frames with lossy compression mode using the unused extra budget
-  // from LossyEncodeNoSlopeOptim() in order to get better PSNR values.
-  Status ExtraLossyEncode(WebPData* const webp_data);
 
   // Returns animation size (in bytes).
   size_t GetAnimationSize(WebPData* const webp_data);

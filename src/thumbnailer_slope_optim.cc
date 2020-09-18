@@ -36,7 +36,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
     if (curr_anim_size == webp_data->size) break;
     curr_anim_size = webp_data->size;
   }
-  CHECK_THUMBNAILER_STATUS(ExtraLossyEncode(webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationEqualQuality(webp_data));
 
   return kOk;
 }
@@ -247,82 +247,6 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
   } else {
     WebPDataClear(&new_webp_data);
     return kOk;
-  }
-
-  if (verbose_) {
-    std::cout << "(Final quality, Near-lossless) :" << std::endl;
-    for (auto& frame : frames_) {
-      std::cout << "(" << frame.final_quality << ", " << frame.near_lossless
-                << ") ";
-    }
-    std::cout << std::endl;
-  }
-  return (webp_data->size > 0) ? kOk : kByteBudgetError;
-}
-
-Thumbnailer::Status Thumbnailer::ExtraLossyEncode(WebPData* const webp_data) {
-  // Encode frames following the ascending order of slope between frame's
-  // current quality and quality 100.
-  std::vector<std::pair<float, int>> encoding_order;
-  for (std::size_t i = 0; i < frames_.size(); ++i)
-    if (!frames_[i].near_lossless) {
-      float slope;
-      CHECK_THUMBNAILER_STATUS(
-          ComputeSlope(i, frames_[i].final_quality, 100, &slope));
-      encoding_order.push_back(std::make_pair(slope, i));
-    }
-  std::sort(encoding_order.begin(), encoding_order.end(),
-            [](const std::pair<float, int>& x, const std::pair<float, int>& y) {
-              return x.first < y.first;
-            });
-
-  WebPData new_webp_data;
-  WebPDataInit(&new_webp_data);
-
-  while (!encoding_order.empty()) {
-    int min_quality = 100;
-    for (std::size_t i = 0; i < encoding_order.size(); ++i) {
-      const int curr_ind = encoding_order[i].second;
-      min_quality = std::min(min_quality, frames_[curr_ind].final_quality + 1);
-    }
-    int max_quality = std::min(min_quality + 30, 100);
-    int final_quality = -1;
-
-    while (min_quality <= max_quality) {
-      int mid_quality = (min_quality + max_quality) / 2;
-      for (std::size_t i = 0; i < encoding_order.size(); ++i) {
-        const int curr_ind = encoding_order[i].second;
-        frames_[curr_ind].config.quality =
-            std::max(frames_[curr_ind].final_quality, mid_quality);
-      }
-      CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
-      if (new_webp_data.size <= byte_budget_) {
-        final_quality = mid_quality;
-        WebPDataClear(webp_data);
-        *webp_data = new_webp_data;
-        min_quality = mid_quality + 1;
-      } else {
-        max_quality = mid_quality - 1;
-        WebPDataClear(&new_webp_data);
-      }
-    }
-    if (final_quality != -1) {
-      for (std::size_t i = 0; i < encoding_order.size(); ++i) {
-        const int curr_ind = encoding_order[i].second;
-        if (frames_[curr_ind].final_quality < final_quality) {
-          frames_[curr_ind].config.quality = final_quality;
-          frames_[curr_ind].final_quality = final_quality;
-          CHECK_THUMBNAILER_STATUS(
-              GetPictureStats(curr_ind, &frames_[curr_ind].encoded_size,
-                              &frames_[curr_ind].final_psnr));
-        }
-      }
-    } else {
-      break;
-    }
-
-    // Discard flattest slopes to iterate on steepest ones.
-    encoding_order.erase(encoding_order.begin());
   }
 
   if (verbose_) {
