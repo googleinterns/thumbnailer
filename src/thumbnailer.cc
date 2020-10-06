@@ -161,7 +161,7 @@ size_t Thumbnailer::GetAnimationSize(WebPData* const webp_data) {
   // therefore consider the bigger one as the current animation size to ensure
   // the resulting animation size fit the byte budget.
   int sum_frame_sizes = 0;
-  for (const auto& frame : frames_) {
+  for (const FrameData& frame : frames_) {
     sum_frame_sizes += frame.encoded_size;
   }
   return std::max(sum_frame_sizes, int(webp_data->size));
@@ -214,7 +214,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
 
   // Fill the animation.
   int prev_timestamp = 0;
-  for (const auto& frame : frames_) {
+  for (const FrameData& frame : frames_) {
     // Copy the 'frame.pic' to a new WebPPicture object and remain the original
     // 'frame.pic' for later comparison.
     WebPPicture new_pic;
@@ -276,7 +276,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
 
   while (min_quality <= max_quality) {
     int mid_quality = (min_quality + max_quality) / 2;
-    for (auto& frame : frames_) {
+    for (FrameData& frame : frames_) {
       if (!frame.near_lossless) {
         frame.config.quality = std::max(frame.final_quality, mid_quality);
       }
@@ -319,7 +319,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
   int final_psnr = -1;
 
   // Find PSNR search range.
-  for (const auto& frame : frames_) {
+  for (const FrameData& frame : frames_) {
     int frame_psnr = std::floor(frame.final_psnr);
     if (high_psnr == -1 || frame_psnr > high_psnr) {
       high_psnr = frame_psnr;
@@ -341,7 +341,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
     // For each frame, find the quality value that produces WebPPicture
     // having PSNR close to target_psnr.
     int prev_timestamp = 0;
-    for (auto& frame : frames_) {
+    for (FrameData& frame : frames_) {
       int frame_min_quality = 0;
       int frame_max_quality = 100;
       int frame_final_quality = -1;
@@ -408,7 +408,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
         *webp_data = new_webp_data;
 
         int curr_ind = 0;
-        for (auto& frame : frames_) {
+        for (FrameData& frame : frames_) {
           CHECK_THUMBNAILER_STATUS(GetPictureStats(
               curr_ind++, &frame.encoded_size, &frame.final_psnr));
           frame.final_quality = frame.config.quality;
@@ -420,7 +420,14 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualPSNR(
       }
     }
   }
-  if (verbose_) std::cout << "Final PSNR: " << final_psnr << std::endl;
+
+  if (verbose_) {
+    std::cout << "Final PSNR: " << final_psnr << std::endl;
+    for (const FrameData& frame : frames_) {
+      std::cout << frame.final_quality << ' ';
+    }
+    std::cout << std::endl;
+  }
 
   if (loop_count_ == 0) return kOk;
   return SetLoopCount(webp_data);

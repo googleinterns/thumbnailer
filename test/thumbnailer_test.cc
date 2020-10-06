@@ -51,12 +51,11 @@ class WebPTestGenerator {
   // Returns vector of WebPPicture(s).
   // randomized_ == true: all pictures are random noise
   // randomized_ == false: all pictures are random solid color
-  std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>>
-  GeneratePics() {
-    std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
+  std::vector<EnclosedWebPPicture> GeneratePics() {
+    std::vector<EnclosedWebPPicture> pics;
     for (int i = 0; i < pic_count_; ++i) {
       pics.emplace_back(new WebPPicture, libwebp::WebPPictureDelete);
-      auto& pic = pics.back();
+      EnclosedWebPPicture& pic = pics.back();
       WebPPictureInit(pic.get());
       pic->use_argb = 1;
       pic->width = width_;
@@ -105,7 +104,7 @@ TEST_P(GenerateAnimationTest, IsGenerated) {
   const libwebp::Thumbnailer::Method method = std::get<3>(GetParam());
 
   libwebp::Thumbnailer thumbnailer = libwebp::Thumbnailer();
-  auto pics =
+  std::vector<EnclosedWebPPicture> pics =
       WebPTestGenerator(pic_count, transparency, use_randomized).GeneratePics();
   for (int i = 0; i < pic_count; ++i) {
     ASSERT_EQ(thumbnailer.AddFrame(*pics[i], i * 500),

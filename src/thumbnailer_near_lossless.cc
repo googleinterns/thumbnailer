@@ -25,7 +25,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   size_t anim_size = GetAnimationSize(webp_data);
 
   int curr_ind = 0;
-  for (auto& frame : frames_) {
+  for (FrameData& frame : frames_) {
     size_t curr_size = frame.encoded_size;
     float curr_psnr = frame.final_psnr;
 
@@ -79,7 +79,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   }
   if (verbose_) {
     std::cout << "Final near-lossless's pre-processing values:" << std::endl;
-    for (const auto& frame : frames_) {
+    for (const FrameData& frame : frames_) {
       if (frame.config.lossless == 0) {
         std::cout << -1 << ' ';
       } else {
