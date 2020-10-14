@@ -24,7 +24,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationSlopeOptim(
   // If all frames are encoded with near-lossless, lossy extra steps will
   // not be called.
   bool all_frame_near_lossless = true;
-  for (const auto& frame : frames_) {
+  for (const FrameData& frame : frames_) {
     all_frame_near_lossless &= frame.near_lossless;
   }
   if (all_frame_near_lossless) return kOk;
@@ -45,7 +45,7 @@ Thumbnailer::Status Thumbnailer::FindMedianSlope(float* const median_slope) {
   std::vector<float> slopes;
 
   int curr_ind = 0;
-  for (auto& frame : frames_) {
+  for (FrameData& frame : frames_) {
     frame.config.quality = 100;
     float psnr_100;   // pic's psnr value with quality = 100.
     size_t size_100;  // pic'size with quality = 100.
@@ -153,7 +153,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
     if (optim_list.empty()) break;
 
-    CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
 
     if (new_webp_data.size <= byte_budget_) {
       for (int curr_frame : optim_list) {
@@ -171,7 +171,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
   if (verbose_) {
     std::cout << "Final qualities with slope optimization:" << std::endl;
     int curr_ind = 0;
-    for (auto& frame : frames_) {
+    for (FrameData& frame : frames_) {
       frame.config.quality = frame.final_quality;
       CHECK_THUMBNAILER_STATUS(
           GetPictureStats(curr_ind++, &frame.encoded_size, &frame.final_psnr));
@@ -195,7 +195,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
 
   // For each frame, find the best quality value that can produce the higher
   // PSNR than the current one if possible.
-  for (auto& frame : frames_) {
+  for (FrameData& frame : frames_) {
     int min_quality = 70;
     if (!frame.config.lossless) {
       min_quality = frame.final_quality;
@@ -232,14 +232,14 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
     ++curr_ind;
   }
 
-  for (auto& frame : frames_) {
+  for (FrameData& frame : frames_) {
     frame.config.quality = frame.final_quality;
     frame.config.lossless = frame.near_lossless;
   }
 
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
 
   if (new_webp_data.size <= byte_budget_) {
     WebPDataClear(webp_data);
@@ -251,7 +251,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
 
   if (verbose_) {
     std::cout << "(Final quality, Near-lossless) :" << std::endl;
-    for (auto& frame : frames_) {
+    for (FrameData& frame : frames_) {
       std::cout << "(" << frame.final_quality << ", " << frame.near_lossless
                 << ") ";
     }

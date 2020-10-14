@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::vector<std::unique_ptr<WebPPicture, void (*)(WebPPicture*)>> pics;
+  std::vector<EnclosedWebPPicture> pics;
   std::ifstream input_list(positional_args.back());
   std::string filename;
   int timestamp_ms;

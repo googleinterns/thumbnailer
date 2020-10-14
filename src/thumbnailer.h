@@ -89,10 +89,12 @@ class Thumbnailer {
     int final_quality = -1;
     float final_psnr = 0.0;
     bool near_lossless = false;
-    // Array containing pairs of (size, psnr) for qualities in range [0..100]
-    // when using lossy encoding. If WebPEncode() has not been called for
-    // quality 'x', lossy_data['x'] = (-1,-1.0).
-    std::pair<int, float> lossy_data[101];
+
+    // Vectors storing the computed size and psnr of a frame for each lossy
+    // quality factor (in range [0, 100]). This is to speed up duplicate
+    // GetPictureStats calls.
+    std::vector<int> lossy_size = std::vector<int>(101, -1);
+    std::vector<float> lossy_psnr = std::vector<float>(101, -1);
 
     FrameData(const WebPPicture& pic, int timestamp_ms,
               const WebPConfig& config)
@@ -109,14 +111,14 @@ class Thumbnailer {
   float slope_dPSNR_;
 
   // Computes the size (in bytes) and PSNR of the 'ind'-th frame. The resulting
-  // size and PSNR will be stored in '*pic_size' and '*pic_PSNR' respectively.
+  // size and PSNR will be stored in '*pic_size' and '*pic_psnr' respectively.
   Status GetPictureStats(int ind, size_t* const pic_size,
-                         float* const pic_PSNR);
+                         float* const pic_psnr);
 
   Status SetLoopCount(WebPData* const webp_data);
 
   // Generates the animation with given config for each frame.
-  Status GenerateAnimationNoBudget(WebPData* const webp_data);
+  Status GenerateAnimationConfigured(WebPData* const webp_data);
 
   // Finds the best quality for lossy compression that makes the animation fit
   // right below the given byte budget and generates the animation. The 'config'
