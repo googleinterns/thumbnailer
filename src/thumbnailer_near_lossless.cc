@@ -90,7 +90,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessDiff(WebPData* const webp_data) {
   }
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
   // If the animation size exceeds the byte budget, return the animation
   // produced by previous method as result.
   if (new_webp_data.size <= byte_budget_) {
@@ -157,7 +157,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
 
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
   // If the animation size exceeds the byte budget, return the animation
   // produced by previous method as result.
   if (new_webp_data.size <= byte_budget_) {
@@ -213,7 +213,7 @@ Thumbnailer::Status Thumbnailer::NearLosslessEqual(WebPData* const webp_data) {
   }
 
   if (final_near_ll != 0) {
-    CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
     if (new_webp_data.size <= byte_budget_) {
       WebPDataClear(webp_data);
       *webp_data = new_webp_data;

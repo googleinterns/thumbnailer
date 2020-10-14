@@ -153,7 +153,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeSlopeOptim(
 
     if (optim_list.empty()) break;
 
-    CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
 
     if (new_webp_data.size <= byte_budget_) {
       for (int curr_frame : optim_list) {
@@ -239,7 +239,7 @@ Thumbnailer::Status Thumbnailer::LossyEncodeNoSlopeOptim(
 
   WebPData new_webp_data;
   WebPDataInit(&new_webp_data);
-  CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+  CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
 
   if (new_webp_data.size <= byte_budget_) {
     WebPDataClear(webp_data);

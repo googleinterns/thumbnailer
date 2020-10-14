@@ -61,22 +61,16 @@ Thumbnailer::Status Thumbnailer::AddFrame(const WebPPicture& pic,
   new_config.show_compressed = 1;
   new_config.method = webp_method_;
   frames_.emplace_back(pic, timestamp_ms, new_config);
-
-  // Initialize 'lossy_data' array.
-  std::fill(frames_.back().lossy_data, frames_.back().lossy_data + 101,
-            std::make_pair(-1, -1.0));
-
   return kOk;
 }
 
 Thumbnailer::Status Thumbnailer::GetPictureStats(int ind,
                                                  size_t* const pic_size,
-                                                 float* const pic_PSNR) {
+                                                 float* const pic_psnr) {
   const int quality = int(frames_[ind].config.quality);
-  if (!frames_[ind].config.lossless &&
-      frames_[ind].lossy_data[quality].first != -1) {
-    *pic_size = frames_[ind].lossy_data[quality].first;
-    *pic_PSNR = frames_[ind].lossy_data[quality].second;
+  if (!frames_[ind].config.lossless && frames_[ind].lossy_size[quality] != -1) {
+    *pic_size = frames_[ind].lossy_size[quality];
+    *pic_psnr = frames_[ind].lossy_psnr[quality];
     return kOk;
   }
 
@@ -109,7 +103,7 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind,
     if (frames_[ind].config.near_lossless == 100) {
       // Lossless always returns PSNR 99.0, therefore, the distortion
       // computation can be skipped in this case.
-      *pic_PSNR = 99.0;
+      *pic_psnr = 99.0;
       *pic_size = encoded_pic.stats->coded_size;
       WebPPictureFree(&encoded_pic);
       WebPMemoryWriterClear(&memory_writer);
@@ -143,11 +137,12 @@ Thumbnailer::Status Thumbnailer::GetPictureStats(int ind,
     WebPMemoryWriterClear(&memory_writer);
     return kStatsError;
   } else {
-    *pic_PSNR = distortion_result[4];  // PSNR-all.
+    *pic_psnr = distortion_result[4];  // PSNR-all.
   }
 
   if (!frames_[ind].config.lossless) {
-    frames_[ind].lossy_data[quality] = std::make_pair(*pic_size, *pic_PSNR);
+    frames_[ind].lossy_size[quality] = *pic_size;
+    frames_[ind].lossy_psnr[quality] = *pic_psnr;
   }
 
   WebPPictureFree(&encoded_pic);
@@ -204,7 +199,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimation(WebPData* const webp_data,
   }
 }
 
-Thumbnailer::Status Thumbnailer::GenerateAnimationNoBudget(
+Thumbnailer::Status Thumbnailer::GenerateAnimationConfigured(
     WebPData* const webp_data) {
   // Delete the previous WebPAnimEncoder object and initialize a new one.
   WebPAnimEncoderDelete(enc_);
@@ -282,7 +277,7 @@ Thumbnailer::Status Thumbnailer::GenerateAnimationEqualQuality(
       }
     }
 
-    CHECK_THUMBNAILER_STATUS(GenerateAnimationNoBudget(&new_webp_data));
+    CHECK_THUMBNAILER_STATUS(GenerateAnimationConfigured(&new_webp_data));
 
     if (new_webp_data.size <= byte_budget_) {
       final_quality = mid_quality;
